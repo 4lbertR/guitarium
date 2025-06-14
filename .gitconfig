@@ -1,0 +1,5 @@
+[user]
+    name = Albert Reinman
+    email = albert.reinman@real.edu.ee
+[credential]
+	helper = store

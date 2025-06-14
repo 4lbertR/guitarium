@@ -1,0 +1,13 @@
+{
+    "B1": { "max": 6, "of": false },
+    "B2": { "max": 6, "of": false },
+    "C1": { "max": 6, "of": false },
+    "C2": { "max": 6, "of": false },
+    "D":  { "max": 6, "of": false },
+    "E1": { "max": 6, "of": false },
+    "E2": { "max": 6, "of": false },
+    "F1": { "max": 6, "of": false },
+    "F2": { "max": 6, "of": false },
+    "G1": { "max": 6, "of": false }
+  }
+  

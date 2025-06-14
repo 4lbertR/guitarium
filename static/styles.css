@@ -1,0 +1,95 @@
+/* Base layout and typography */
+body {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #222;
+  background: #fff;
+  margin: 0;
+  padding: 2em;
+  text-align: center;
+}
+
+/* Titles */
+h1, h2, h3 {
+  font-weight: normal;
+  color: #7c1f59; /* Guitarium purple tone */
+  text-transform: uppercase;
+  margin-bottom: 1em;
+}
+
+/* Links */
+a {
+  color: #7c1f59;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* Forms */
+form {
+  display: inline-block;
+  margin-top: 1em;
+  padding: 1em;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #fdfdfd;
+}
+input[type="text"],
+input[type="password"] {
+  display: block;
+  margin: 0.5em auto;
+  padding: 0.5em;
+  width: 250px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Buttons */
+button {
+  background-color: #7c1f59;
+  color: #fff;
+  padding: 0.6em 1.2em;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+button:hover {
+  background-color: #9e3577;
+}
+
+details {
+  text-align: left;
+  max-width: 600px;
+  margin: 1em auto;
+  padding: 1em;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #f8f8f8;
+}
+summary {
+  font-weight: bold;
+  cursor: pointer;
+}
+.joined summary::after {
+  content: " ✅";
+}
+
+.error-msg {
+  color: #d00;
+  font-size: 0.9em;
+  margin-top: 0.5em;
+  display: none;
+}
+
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+#myText {
+  margin-top: 2em;
+  color: #444;
+}

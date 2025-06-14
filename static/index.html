@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+  <meta charset="UTF-8">
+  <title>Guitarium Login</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Logi sisse</h1>
+  <form onsubmit="event.preventDefault(); login();">
+    <input type="text" id="name" placeholder="Täisnimi" required />
+    <input type="password" id="password" placeholder="Parool" required />
+    <button type="submit">Logi sisse</button>
+  </form>
+  <p id="message" style="color: red;"></p>
+
+  <script>
+    async function login() {
+      const fullname = document.getElementById('name').value.trim();
+      const password = document.getElementById('password').value;
+
+      const res = await fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullname, password })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        window.location.href = '/success.html';
+      } else {
+        document.getElementById('message').textContent = '❌ Vale nimi või parool';
+      }
+    }
+  </script>
+</body>
+</html>
