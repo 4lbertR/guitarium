@@ -123,7 +123,7 @@
           return; // Stop execution of this function
         }
         const me = await meResponse.json();
-        userId = me.id;
+        userId = me.id; // userId is a number
         group = me.group;
 
         const configResponse = await fetch('/config.json');
@@ -257,8 +257,6 @@
 
       } catch (error) {
         console.error('Error initializing page:', error);
-        // This catch block will now only be reached for other errors,
-        // as authentication failure is handled by the initial `if (!meResponse.ok)`
         document.getElementById('myText').textContent = '❌ Viga sündmuste laadimisel';
       }
     }

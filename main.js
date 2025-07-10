@@ -251,8 +251,9 @@ function sucess(app) {
     resave: false,
     saveUninitialized: false,
     cookie: { 
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 1000 * 60 * 60 * 24
+      secure: process.env.NODE_ENV === 'production', // Cookie must be secure (HTTPS) for SameSite=None
+      maxAge: 1000 * 60 * 60 * 24, // 24 hours
+      sameSite: 'None' // CRITICAL FIX: Allows cookie to be sent in cross-site contexts (iframes)
     } 
   }));
 
