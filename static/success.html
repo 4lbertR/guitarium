@@ -118,12 +118,11 @@
       try {
         const meResponse = await fetch('/api/me');
         if (!meResponse.ok) {
-          // If API call fails (e.g., 401 Unauthorized), redirect to login page
           location.href = '/'; // Redirect the entire page
-          return; // Stop execution of this function
+          return;
         }
         const me = await meResponse.json();
-        userId = me.id; // userId is a number
+        userId = me.id;
         group = me.group;
 
         const configResponse = await fetch('/config.json');
