@@ -279,7 +279,7 @@ function sucess(app) {
 
   app.get('/success.html', (req, res) => {
     if (req.session.user) {
-      res.sendFile(path.join(__dirname, 'success.html'));
+      res.sendFile(path.join(__dirname, 'static', 'success.html'));
     } else {
       res.redirect('/');
     }

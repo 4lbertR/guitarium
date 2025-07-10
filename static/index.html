@@ -2,34 +2,108 @@
 <html lang="et">
 <head>
   <meta charset="UTF-8">
-  <title>Guitarium Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Logi sisse</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background-color: #f0f2f5;
+      color: #333;
+    }
+    .login-container {
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    .login-container h1 {
+      color: #007bff;
+      margin-bottom: 20px;
+    }
+    .login-container input[type="text"],
+    .login-container input[type="password"] {
+      width: calc(100% - 20px);
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .login-container button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1em;
+      width: 100%;
+    }
+    .login-container button:hover {
+      background-color: hsl(322, 50%, 41%); /* Purple hover */
+    }
+    .login-container .error-message {
+      color: red;
+      margin-top: 10px;
+      font-size: 0.9em;
+    }
+  </style>
 </head>
 <body>
-  <h1>Logi sisse</h1>
-  <form onsubmit="event.preventDefault(); login();">
-    <input type="text" id="name" placeholder="Ees- ja perekonnanimi" required />
-    <input type="password" id="password" placeholder="Parool" required />
-    <button type="submit">Logi sisse</button>
-  </form>
-  <p id="message" style="color: red;"></p>
+  <div class="login-container">
+    <h1>Logi sisse</h1>
+    <input type="text" id="fullname" placeholder="Täisnimi" required>
+    <input type="password" id="password" placeholder="Parool" required>
+    <button onclick="login()">Logi sisse</button>
+    <p id="errorMessage" class="error-message"></p>
+  </div>
 
   <script>
     async function login() {
-      const fullname = document.getElementById('name').value.trim();
+      const fullname = document.getElementById('fullname').value.trim();
       const password = document.getElementById('password').value;
+      const errorMessage = document.getElementById('errorMessage');
+      errorMessage.textContent = '';
 
-      const res = await fetch('/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullname, password })
-      });
+      try {
+        const response = await fetch('/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ fullname, password })
+        });
 
-      const data = await res.json();
-      if (data.success) {
-        window.location.href = '/success.html';
-      } else {
-        document.getElementById('message').textContent = '❌ Vale nimi või parool';
+        const data = await response.json();
+
+        if (data.success) {
+          // CRITICAL FIX: Redirect the entire parent window if inside an iframe
+          if (window.self !== window.top) {
+            // This assumes the parent window's URL is where the iframe is embedded,
+            // and that the parent should then load the /success.html content from your app.
+            // If the parent URL doesn't change, the iframe's src needs to be updated.
+            // For a Voog embed, the parent URL probably won't change, so we need to
+            // redirect the *top window* to the *CapRover success URL*.
+            window.top.location.href = 'https://guitarium.apps.realsteal.online/success.html';
+          } else {
+            // If not in an iframe, redirect normally to the app's success page
+            window.location.href = '/success.html';
+          }
+        } else {
+          errorMessage.textContent = 'Vale nimi või parool.';
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        errorMessage.textContent = 'Võrguviga või serveri viga.';
       }
     }
   </script>
