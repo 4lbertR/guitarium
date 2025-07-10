@@ -57,6 +57,7 @@ button {
 }
 button:hover {
   background-color: hsl(322, 50%, 41%);
+  border-radius:%204px;$0
 }
 
 details {
