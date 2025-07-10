@@ -7,7 +7,7 @@ const app = express();
 
 // Serve static files from the 'static' subdirectory
 app.use(express.static(path.join(__dirname, 'static')));
-
+ 
 app.use(express.json()); // For parsing JSON request bodies
 app.use(express.urlencoded({ extended: true })); // For parsing URL-encoded request bodies
 
