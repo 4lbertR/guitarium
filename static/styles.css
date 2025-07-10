@@ -48,7 +48,7 @@ input[type="password"] {
 
 /* Buttons */
 button {
-  background-color: #7c1f59;
+  background-color: hsl(323, 60%, 30%);
   color: #fff;
   padding: 0.6em 1.2em;
   border: none;
@@ -56,7 +56,7 @@ button {
   cursor: pointer;
 }
 button:hover {
-  background-color: #9e3577;
+  background-color: hsl(322, 50%, 41%);
 }
 
 details {
@@ -71,9 +71,6 @@ details {
 summary {
   font-weight: bold;
   cursor: pointer;
-}
-.joined summary::after {
-  content: " ✅";
 }
 
 .error-msg {

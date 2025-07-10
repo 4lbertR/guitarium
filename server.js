@@ -6,25 +6,22 @@ const { sucess } = require('./main');
 
 const app = express();
 
-// Middleware
 app.use(express.static(path.join(__dirname, 'static')));
 app.use(express.json());
 app.use(session({
-  secret: 'guitarium_super_secret',
+  secret: process.env.SESSION_SECRET || 'guitarium_super_secret',
   resave: false,
   saveUninitialized: true,
   cookie: {
     httpOnly: true,
     sameSite: 'lax',
-    secure: false // change to true if using HTTPS
+    secure: false // ⚠️ Set to true if running behind HTTPS
   }
 }));
 
-// Mount routes
 sucess(app);
 
-// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });

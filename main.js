@@ -5,7 +5,9 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const session = require('express-session');
-//KAKAJUBBA
+
+require('dotenv').config();
+
 const key = {
   type: process.env.GOOGLE_TYPE,
   project_id: process.env.GOOGLE_PROJECT_ID,
@@ -37,7 +39,7 @@ async function checkLogin(fullname, password) {
   const db = await mysql.createConnection(DB_CONFIG);
   const [rows] = await db.execute('SELECT password, grupp, id FROM users WHERE fullname = ? LIMIT 1', [fullname]);
   await db.end();
-  if (rows.length === 0) return { match: false, grupp: null };
+  if (rows.length === 0) return { match: false, grupp: null, id: null };
   return {
     match: bcrypt.compareSync(password, rows[0].password),
     grupp: rows[0].grupp,
@@ -72,7 +74,12 @@ async function listEvents(groupFilter) {
     const end = event.end?.dateTime;
     const desc = event.summary;
     const eventId = event.id;
-    const joined = (event.description || '').split(/\s+/).filter(x => /^\d+$/.test(x));
+    // FIX: Add .map(Number) to ensure joined IDs are numbers
+    const joined = (event.description || '')
+      .split(/\s+/)
+      .filter(x => /^\d+$/.test(x.trim()))
+      .map(Number); // CRITICAL FIX: Convert to numbers
+
     if (!start || !end || !desc) return;
 
     const when = [
@@ -98,6 +105,15 @@ async function listEvents(groupFilter) {
 }
 
 async function join(eventId, userId) {
+  if (typeof userId !== 'number') {
+    console.error('Error: userId is not a number in join function!', userId);
+    return { success: false, reason: 'invalid_user_id_type' };
+  }
+  if (typeof eventId !== 'string') {
+    console.error('Error: eventId is not a string in join function!', eventId);
+    return { success: false, reason: 'invalid_event_id_type' };
+  }
+
   const db = await mysql.createConnection(DB_CONFIG);
   const [rows] = await db.execute('SELECT grupp FROM users WHERE id = ?', [userId]);
   const group = rows[0]?.grupp;
@@ -117,62 +133,109 @@ async function join(eventId, userId) {
     orderBy: 'startTime'
   });
 
-  const userFutureJoins = allEvents.data.items.filter(event => {
-    const joined = (event.description || '').split(/\s+/);
-    const start = new Date(event.start?.dateTime);
-    return joined.includes(String(userId)) && start > new Date();
+  // FIX: Ensure joined IDs are numbers for comparison
+  const userFutureJoins = (allEvents.data.items || []).filter(event => {
+    const joined = (event.description || '')
+      .split(/\s+/)
+      .filter(x => /^\d+$/.test(x.trim()))
+      .map(Number); // CRITICAL FIX: Convert to numbers
+    const start = event.start?.dateTime ? new Date(event.start.dateTime) : null;
+    return start && joined.includes(userId) && start > new Date(); // Compare numeric userId
   }).length;
 
-  if (!ofEnabled && userFutureJoins >= max) return { success: false, reason: 'overflow' };
+  if (!ofEnabled && userFutureJoins >= max) {
+    return { success: false, reason: 'overflow' };
+  }
 
   const res = await calendar.events.get({ calendarId, eventId });
-  const ids = (res.data.description || '').split(/\s+/).filter(x => /^\d+$/.test(x));
-  console.log('Userid: ',userId)
-  if (ids.includes(String(userId))) return { success: true };
-  if (ids.length >= max) return { success: false, reason: 'full' };
+  // FIX: Ensure existing IDs are parsed as numbers
+  let ids = (res.data.description || '')
+    .split(/\s+/)
+    .filter(x => /^\d+$/.test(x.trim()))
+    .map(Number); // CRITICAL FIX: Convert to numbers
 
-  ids.push(String(userId));
+  if (ids.includes(userId)) { // Compare numeric userId
+    return { success: true };
+  }
+  if (ids.length >= max) {
+    return { success: false, reason: 'full' };
+  }
+
+  ids.push(userId); // Push numeric userId
+  const newDescription = ids.join('\n');
+
   await calendar.events.patch({
     calendarId,
     eventId,
-    requestBody: { description: ids.join('\n') }
+    requestBody: { description: newDescription }
   });
 
   return { success: true };
 }
 
 async function leave(eventId, userId) {
+  if (typeof userId !== 'number') {
+    console.error('Error: userId is not a number in leave function!', userId);
+    return { success: false, reason: 'invalid_user_id_type' };
+  }
+  if (typeof eventId !== 'string') {
+    console.error('Error: eventId is not a string in leave function!', eventId);
+    return { success: false, reason: 'invalid_event_id_type' };
+  }
+
   const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
   const authClient = await auth.getClient();
   const calendar = google.calendar({ version: 'v3', auth: authClient });
 
   const res = await calendar.events.get({ calendarId, eventId });
   const event = res.data;
+
   const start = new Date(event.start?.dateTime);
   const now = new Date();
   const diffMins = (start - now) / 60000;
-  if (diffMins < 1440) return { success: false, reason: 'too_late' };
 
-  const ids = (event.description || '').split(/\s+/).filter(x => /^\d+$/.test(x));
-  const filtered = ids.filter(x => x !== String(userId));
+  if (diffMins < 1440) {
+    return { success: false, reason: 'too_late' };
+  }
+
+  // FIX: Ensure IDs are parsed as numbers
+  const ids = (event.description || '')
+    .split(/\s+/)
+    .filter(x => /^\d+$/.test(x.trim()))
+    .map(Number); // CRITICAL FIX: Convert to numbers
+
+  const filtered = ids.filter(x => x !== userId); // Compare numeric userId
+  const newDescription = filtered.join('\n');
 
   await calendar.events.patch({
     calendarId,
     eventId,
-    requestBody: { description: filtered.join('\n') }
+    requestBody: { description: newDescription }
   });
 
   return { success: true };
 }
 
 async function getParticipants(eventId) {
+  if (typeof eventId !== 'string') {
+    console.error('Error: eventId is not a string in getParticipants function!', eventId);
+    return [];
+  }
+
   const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
   const authClient = await auth.getClient();
   const calendar = google.calendar({ version: 'v3', auth: authClient });
 
   const res = await calendar.events.get({ calendarId, eventId });
-  const ids = (res.data.description || '').split(/\s+/).filter(x => /^\d+$/.test(x));
-  if (ids.length === 0) return [];
+  // FIX: Ensure IDs are parsed as numbers
+  const ids = (res.data.description || '')
+    .split(/\s+/)
+    .filter(x => /^\d+$/.test(x.trim()))
+    .map(Number); // CRITICAL FIX: Convert to numbers
+  
+  if (ids.length === 0) {
+    return [];
+  }
 
   const db = await mysql.createConnection(DB_CONFIG);
   const [rows] = await db.query(
@@ -188,6 +251,16 @@ async function getParticipants(eventId) {
 }
 
 function sucess(app) {
+  app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: { 
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 1000 * 60 * 60 * 24
+    } 
+  }));
+
   app.post('/login', async (req, res) => {
     const { fullname, password } = req.body;
     if (!fullname || !password) {
@@ -199,13 +272,12 @@ function sucess(app) {
       if (result.match) {
         req.session.user = fullname;
         req.session.group = result.grupp;
-        req.session.id = result.id;
-        
+        req.session.userId = result.id;
       }
       res.json({ success: result.match, grupp: result.grupp });
     } catch (err) {
       console.error('Login error:', err.message);
-      res.status(500).json({ success: false });
+      res.status(500).json({ success: false, message: 'Internal server error during login' });
     }
   });
 
@@ -219,40 +291,60 @@ function sucess(app) {
 
   app.get('/api/events', async (req, res) => {
     const group = req.session.group || null;
-    const events = await listEvents(group);
-    res.json(events);
+    try {
+      const events = await listEvents(group);
+      res.json(events);
+    } catch (err) {
+      console.error('Error fetching events:', err.message);
+      res.status(500).json({ future: [], past: [], message: 'Error fetching events' });
+    }
   });
 
   app.get('/api/join', async (req, res) => {
     const { eventId } = req.query;
-    const userId = req.session.id;
-    if (!userId) return res.status(403).json({ success: false });
+    const userId = req.session.userId;
+
+    if (!userId) {
+      return res.status(403).json({ success: false, reason: 'not_authenticated' });
+    }
+    if (!eventId) {
+      return res.status(400).json({ success: false, reason: 'missing_event_id' });
+    }
 
     try {
       const joined = await join(eventId, userId);
       res.json(joined);
     } catch (err) {
       console.error('Join failed:', err.message);
-      res.status(500).json({ success: false });
+      res.status(500).json({ success: false, reason: 'internal_error', message: err.message });
     }
   });
 
   app.get('/api/leave', async (req, res) => {
     const { eventId } = req.query;
-    const userId = req.session.id;
-    if (!userId) return res.status(403).json({ success: false });
+    const userId = req.session.userId;
+
+    if (!userId) {
+      return res.status(403).json({ success: false, reason: 'not_authenticated' });
+    }
+    if (!eventId) {
+      return res.status(400).json({ success: false, reason: 'missing_event_id' });
+    }
 
     try {
       const result = await leave(eventId, userId);
       res.json(result);
     } catch (err) {
       console.error('Leave failed:', err.message);
-      res.status(500).json({ success: false });
+      res.status(500).json({ success: false, reason: 'internal_error', message: err.message });
     }
   });
 
   app.get('/api/getParticipants', async (req, res) => {
     const { eventId } = req.query;
+    if (!eventId) {
+      return res.status(400).json([]);
+    }
     try {
       const participants = await getParticipants(eventId);
       res.json(participants);
@@ -263,15 +355,19 @@ function sucess(app) {
   });
 
   app.get('/api/me', (req, res) => {
-    if (req.session?.id && req.session.group) {
-      res.json({ id: req.session.id, group: req.session.group });
+    if (req.session?.userId && req.session.group) {
+      res.json({ id: req.session.userId, group: req.session.group });
     } else {
       res.status(401).json({});
     }
   });
 
   app.post('/logout', (req, res) => {
-    req.session.destroy(() => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Error destroying session:', err);
+        return res.status(500).json({ success: false, message: 'Logout failed' });
+      }
       res.clearCookie('connect.sid');
       res.redirect('/');
     });
