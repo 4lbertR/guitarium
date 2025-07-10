@@ -117,9 +117,13 @@
 
       try {
         const meResponse = await fetch('/api/me');
-        if (!meResponse.ok) throw new Error('Failed to fetch user data');
+        if (!meResponse.ok) {
+          // If API call fails (e.g., 401 Unauthorized), redirect to login page
+          location.href = '/'; // Redirect the entire page
+          return; // Stop execution of this function
+        }
         const me = await meResponse.json();
-        userId = me.id; // userId is a number
+        userId = me.id;
         group = me.group;
 
         const configResponse = await fetch('/config.json');
@@ -136,7 +140,6 @@
         const past = data.past || [];
 
         let howmany = 0;
-        // FIX: Compare numeric userId with numeric IDs in e[6]
         howmany = future.filter(e => e[6].includes(userId)).length;
 
         document.getElementById('joinedCount').textContent = `Liitunud ${howmany}/${maxLimit} tunniga`;
@@ -145,7 +148,6 @@
         const render = (target, list, isFuture = false) => {
           list.forEach(event => {
             const [year, month, day, start, end, eventId, joined] = event;
-            // FIX: Compare numeric userId with numeric IDs in joined
             let hasJoined = joined.includes(userId);
 
             const details = document.createElement('details');
@@ -155,15 +157,13 @@
             const summaryTextSpan = document.createElement('span');
             summaryTextSpan.textContent = `${day}. ${month} ${year}, ${start}–${end}`;
 
-            // Append text first
-            summary.appendChild(summaryTextSpan);
-            // Then append image if joined
+            summary.appendChild(summaryTextSpan); // Append text first
             if (hasJoined) {
                 const checkmarkImg = document.createElement('img');
                 checkmarkImg.src = '/checkbox.png';
                 checkmarkImg.alt = 'Joined';
                 checkmarkImg.classList.add('lesson-checkmark-icon');
-                summary.appendChild(checkmarkImg);
+                summary.appendChild(checkmarkImg); // Then append image
             }
 
             details.appendChild(summary);
@@ -257,6 +257,8 @@
 
       } catch (error) {
         console.error('Error initializing page:', error);
+        // This catch block will now only be reached for other errors,
+        // as authentication failure is handled by the initial `if (!meResponse.ok)`
         document.getElementById('myText').textContent = '❌ Viga sündmuste laadimisel';
       }
     }

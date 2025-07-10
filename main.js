@@ -74,11 +74,10 @@ async function listEvents(groupFilter) {
     const end = event.end?.dateTime;
     const desc = event.summary;
     const eventId = event.id;
-    // FIX: Add .map(Number) to ensure joined IDs are numbers
     const joined = (event.description || '')
       .split(/\s+/)
       .filter(x => /^\d+$/.test(x.trim()))
-      .map(Number); // CRITICAL FIX: Convert to numbers
+      .map(Number);
 
     if (!start || !end || !desc) return;
 
@@ -133,14 +132,13 @@ async function join(eventId, userId) {
     orderBy: 'startTime'
   });
 
-  // FIX: Ensure joined IDs are numbers for comparison
   const userFutureJoins = (allEvents.data.items || []).filter(event => {
     const joined = (event.description || '')
       .split(/\s+/)
       .filter(x => /^\d+$/.test(x.trim()))
-      .map(Number); // CRITICAL FIX: Convert to numbers
+      .map(Number);
     const start = event.start?.dateTime ? new Date(event.start.dateTime) : null;
-    return start && joined.includes(userId) && start > new Date(); // Compare numeric userId
+    return start && joined.includes(userId) && start > new Date();
   }).length;
 
   if (!ofEnabled && userFutureJoins >= max) {
@@ -148,20 +146,19 @@ async function join(eventId, userId) {
   }
 
   const res = await calendar.events.get({ calendarId, eventId });
-  // FIX: Ensure existing IDs are parsed as numbers
   let ids = (res.data.description || '')
     .split(/\s+/)
     .filter(x => /^\d+$/.test(x.trim()))
-    .map(Number); // CRITICAL FIX: Convert to numbers
+    .map(Number);
 
-  if (ids.includes(userId)) { // Compare numeric userId
+  if (ids.includes(userId)) {
     return { success: true };
   }
   if (ids.length >= max) {
     return { success: false, reason: 'full' };
   }
 
-  ids.push(userId); // Push numeric userId
+  ids.push(userId);
   const newDescription = ids.join('\n');
 
   await calendar.events.patch({
@@ -198,13 +195,12 @@ async function leave(eventId, userId) {
     return { success: false, reason: 'too_late' };
   }
 
-  // FIX: Ensure IDs are parsed as numbers
   const ids = (event.description || '')
     .split(/\s+/)
     .filter(x => /^\d+$/.test(x.trim()))
-    .map(Number); // CRITICAL FIX: Convert to numbers
+    .map(Number);
 
-  const filtered = ids.filter(x => x !== userId); // Compare numeric userId
+  const filtered = ids.filter(x => x !== userId);
   const newDescription = filtered.join('\n');
 
   await calendar.events.patch({
@@ -227,11 +223,10 @@ async function getParticipants(eventId) {
   const calendar = google.calendar({ version: 'v3', auth: authClient });
 
   const res = await calendar.events.get({ calendarId, eventId });
-  // FIX: Ensure IDs are parsed as numbers
   const ids = (res.data.description || '')
     .split(/\s+/)
     .filter(x => /^\d+$/.test(x.trim()))
-    .map(Number); // CRITICAL FIX: Convert to numbers
+    .map(Number);
   
   if (ids.length === 0) {
     return [];
