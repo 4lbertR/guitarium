@@ -16,7 +16,7 @@ const key = {
 
 const calendarId = process.env.GOOGLE_CALENDAR_ID;
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
-
+ 
 (async () => {
   const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
   const authClient = await auth.getClient();
