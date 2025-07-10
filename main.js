@@ -4,7 +4,6 @@ const { google } = require('googleapis');
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-
 const session = require('express-session');
 
 const key = {
@@ -73,7 +72,7 @@ async function listEvents(groupFilter) {
     const end = event.end?.dateTime;
     const desc = event.summary;
     const eventId = event.id;
-    const joined = (event.description || '').split(/\s+/).filter(Boolean);
+    const joined = (event.description || '').split(/\s+/).filter(x => /^\d+$/.test(x));
     if (!start || !end || !desc) return;
 
     const when = [
@@ -121,18 +120,18 @@ async function join(eventId, userId) {
   const userFutureJoins = allEvents.data.items.filter(event => {
     const joined = (event.description || '').split(/\s+/);
     const start = new Date(event.start?.dateTime);
-    return joined.includes(userId) && start > new Date();
+    return joined.includes(String(userId)) && start > new Date();
   }).length;
 
   if (!ofEnabled && userFutureJoins >= max) return { success: false, reason: 'overflow' };
 
   const res = await calendar.events.get({ calendarId, eventId });
-  const ids = (res.data.description || '').split(/\s+/).filter(Boolean);
-
-  if (ids.includes(userId)) return { success: true };
+  const ids = (res.data.description || '').split(/\s+/).filter(x => /^\d+$/.test(x));
+  console.log('Userid: ',userId)
+  if (ids.includes(String(userId))) return { success: true };
   if (ids.length >= max) return { success: false, reason: 'full' };
 
-  ids.push(userId);
+  ids.push(String(userId));
   await calendar.events.patch({
     calendarId,
     eventId,
@@ -154,8 +153,8 @@ async function leave(eventId, userId) {
   const diffMins = (start - now) / 60000;
   if (diffMins < 1440) return { success: false, reason: 'too_late' };
 
-  const ids = (event.description || '').split(/\s+/).filter(Boolean);
-  const filtered = ids.filter(x => x !== userId);
+  const ids = (event.description || '').split(/\s+/).filter(x => /^\d+$/.test(x));
+  const filtered = ids.filter(x => x !== String(userId));
 
   await calendar.events.patch({
     calendarId,
@@ -172,7 +171,7 @@ async function getParticipants(eventId) {
   const calendar = google.calendar({ version: 'v3', auth: authClient });
 
   const res = await calendar.events.get({ calendarId, eventId });
-  const ids = (res.data.description || '').split(/\s+/).filter(Boolean);
+  const ids = (res.data.description || '').split(/\s+/).filter(x => /^\d+$/.test(x));
   if (ids.length === 0) return [];
 
   const db = await mysql.createConnection(DB_CONFIG);
@@ -189,11 +188,10 @@ async function getParticipants(eventId) {
 }
 
 function sucess(app) {
-  // Login
   app.post('/login', async (req, res) => {
     const { fullname, password } = req.body;
     if (!fullname || !password) {
-      return res.status(400).json({ success: false, message: 'Missing fields' });
+      return res.status(400).json({ success: false, message: 'Missing login fields' });
     }
 
     try {
@@ -202,6 +200,7 @@ function sucess(app) {
         req.session.user = fullname;
         req.session.group = result.grupp;
         req.session.id = result.id;
+        
       }
       res.json({ success: result.match, grupp: result.grupp });
     } catch (err) {
@@ -210,16 +209,14 @@ function sucess(app) {
     }
   });
 
-  // Protected page
   app.get('/success.html', (req, res) => {
     if (req.session.user) {
-      res.sendFile(path.join(__dirname, 'static', 'success.html'));
+      res.sendFile(path.join(__dirname, 'success.html'));
     } else {
       res.redirect('/');
     }
   });
 
-  // Events API
   app.get('/api/events', async (req, res) => {
     const group = req.session.group || null;
     const events = await listEvents(group);
@@ -265,16 +262,14 @@ function sucess(app) {
     }
   });
 
-  // Get session info
   app.get('/api/me', (req, res) => {
-    if (req.session && req.session.id) {
+    if (req.session?.id && req.session.group) {
       res.json({ id: req.session.id, group: req.session.group });
     } else {
       res.status(401).json({});
     }
   });
 
-  // Logout
   app.post('/logout', (req, res) => {
     req.session.destroy(() => {
       res.clearCookie('connect.sid');
@@ -282,7 +277,6 @@ function sucess(app) {
     });
   });
 
-  // Static config file
   app.get('/config.json', (req, res) => {
     res.json(config);
   });

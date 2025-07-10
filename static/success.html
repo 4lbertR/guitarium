@@ -24,16 +24,6 @@
       height: 60px;
       width: auto;
     }
-    .joined summary::after {
-      content: " ✅";
-    }
-    button {
-      margin-top: 0.5em;
-    }
-    .error-msg {
-      color: red;
-      font-size: 0.9em;
-    }
   </style>
 </head>
 <body>
@@ -44,6 +34,8 @@
     </a>
     <button onclick="logout()">Logi välja</button>
   </header>
+
+  <h3 id="fixedInfo"></h3>
 
   <h1>Järgmised tunnid:</h1>
   <p id="joinedCount"></p>
@@ -57,121 +49,126 @@
   <script>
     function logout() {
       fetch('/logout', { method: 'POST' }).then(() => {
-        window.location.href = '/';
+        location.href = '/';
       });
     }
 
-    let userId = null;
-    let group = null;
-    let howmany = 0;
-    let maxLimit = 6;
+    let userId = '';
+    let group = '';
 
     fetch('/api/me')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
       .then(me => {
-        if (!me || !me.id) throw new Error('Not logged in');
         userId = me.id;
         group = me.group;
         return fetch('/config.json');
       })
       .then(res => res.json())
       .then(config => {
-        maxLimit = config[group]?.max || 6;
-        return fetch('/api/events');
-      })
-      .then(res => res.json())
-      .then(data => {
-        const future = Array.isArray(data.future) ? data.future : Object.values(data.future).flat();
-        const past = Array.isArray(data.past) ? data.past : Object.values(data.past).flat();
+        const text = config[group]?.time || '';
+        document.getElementById('fixedInfo').textContent =
+          `Oled registreerunud ${group} püsiajaga${text ? ' ' + text : ''}`;
+        const maxLimit = config[group]?.max || 6;
 
-        howmany += future.filter(e => e[6].includes(userId)).length;
-        howmany += past.filter(e => e[6].includes(userId)).length;
-        document.getElementById('joinedCount').textContent = `Liitunud ${howmany}/${maxLimit} tunniga`;
-        document.getElementById('myText').textContent = `Tulemas: ${future.length}, Möödunud: ${past.length}`;
+        return fetch('/api/events').then(res => res.json()).then(data => {
+          const future = Array.isArray(data.future) ? data.future : Object.values(data.future).flat();
+          const past = Array.isArray(data.past) ? data.past : Object.values(data.past).flat();
 
-        const render = (target, list, isFuture = false) => {
-          list.forEach(event => {
-            const [year, month, day, start, end, eventId, joined] = event;
-            let hasJoined = joined.includes(userId);
+          let howmany = 0;
+          howmany += future.filter(e => e[6].includes(String(userId))).length;
+          howmany += past.filter(e => e[6].includes(String(userId))).length;
 
-            const details = document.createElement('details');
-            if (hasJoined) details.classList.add('joined');
+          document.getElementById('joinedCount').textContent = `Liitunud ${howmany}/${maxLimit} tunniga`;
+          document.getElementById('myText').textContent = `Tulemas: ${future.length}, Möödunud: ${past.length}`;
 
-            const summary = document.createElement('summary');
-            summary.textContent = `${day}. ${month} ${year}, ${start}–${end}`;
-            details.appendChild(summary);
+          const render = (target, list, isFuture = false) => {
+            list.forEach(event => {
+              const [year, month, day, start, end, eventId, joined] = event;
+              let hasJoined = joined.includes(String(userId));
 
-            const body = document.createElement('div');
-            const p = document.createElement('p');
-            body.appendChild(p);
+              const details = document.createElement('details');
+              if (hasJoined) details.classList.add('joined');
 
-            if (isFuture) {
-              const btn = document.createElement('button');
-              btn.textContent = hasJoined ? 'Loobu' : 'Liitu';
-              const errorMsg = document.createElement('p');
-              errorMsg.className = 'error-msg';
-              errorMsg.style.display = 'none';
+              const summary = document.createElement('summary');
+              summary.textContent = `${day}. ${month} ${year}, ${start}–${end}`;
+              details.appendChild(summary);
 
-              btn.onclick = () => {
-                btn.disabled = true;
-                const action = hasJoined ? 'leave' : 'join';
-                fetch(`/api/${action}?eventId=${eventId}`)
-                  .then(res => res.json())
-                  .then(result => {
-                    errorMsg.style.display = 'none';
-                    if (result.success) {
-                      hasJoined = !hasJoined;
-                      details.classList.toggle('joined');
-                      btn.textContent = hasJoined ? 'Loobu' : 'Liitu';
-                      howmany += hasJoined ? 1 : -1;
-                      document.getElementById('joinedCount').textContent = `Liitunud ${howmany}/${maxLimit} tunniga`;
+              const body = document.createElement('div');
+              const p = document.createElement('p');
+              body.appendChild(p);
 
-                      return fetch('/api/getParticipants?eventId=' + eventId)
-                        .then(res => res.json())
-                        .then(participants => {
-                          p.textContent = 'Osalejad: ' + participants.map(x => x.fullname).join(', ');
-                        });
-                    } else {
-                      errorMsg.textContent =
-                        result.reason === 'too_late'
-                          ? 'Ei saa loobuda vähem kui 24h enne algust.'
-                          : result.reason === 'overflow'
-                            ? 'Sa oled liitunud maksimaalse arvu tunniga'
-                            : 'Toiming ebaõnnestus.';
+              if (isFuture) {
+                const btn = document.createElement('button');
+                btn.textContent = hasJoined ? 'Loobu' : 'Liitu';
+                const errorMsg = document.createElement('p');
+                errorMsg.className = 'error-msg';
+                errorMsg.style.display = 'none';
+
+                btn.onclick = () => {
+                  btn.disabled = true;
+                  const action = btn.textContent === 'Liitu' ? 'join' : 'leave';
+                  fetch(`/api/${action}?eventId=${eventId}`)
+                    .then(res => res.json())
+                    .then(result => {
+                      errorMsg.style.display = 'none';
+                      if (result.success) {
+                        hasJoined = !hasJoined;
+                        details.classList.toggle('joined');
+                        btn.textContent = hasJoined ? 'Loobu' : 'Liitu';
+                        howmany += hasJoined ? 1 : -1;
+                        document.getElementById('joinedCount').textContent =
+                          `Liitunud ${howmany}/${maxLimit} tunniga`;
+
+                        return fetch('/api/getParticipants?eventId=' + eventId)
+                          .then(res => res.json())
+                          .then(participants => {
+                            p.textContent = 'Osalejad: ' + participants.map(x => x.fullname).join(', ');
+                          });
+                      } else {
+                        errorMsg.textContent =
+                          result.reason === 'too_late'
+                            ? 'Ei saa loobuda vähem kui 24h enne algust.'
+                            : result.reason === 'overflow'
+                              ? 'Sa oled liitunud maksimaalse arvu tunniga'
+                              : 'Toiming ebaõnnestus.';
+                        errorMsg.style.display = 'block';
+                      }
+                    })
+                    .catch(() => {
+                      errorMsg.textContent = 'Võrguviga.';
                       errorMsg.style.display = 'block';
-                    }
-                  })
-                  .catch(() => {
-                    errorMsg.textContent = 'Võrguviga.';
-                    errorMsg.style.display = 'block';
-                  })
-                  .finally(() => {
-                    btn.disabled = false;
-                  });
-              };
+                    })
+                    .finally(() => {
+                      btn.disabled = false;
+                    });
+                };
 
-              body.appendChild(btn);
-              body.appendChild(errorMsg);
-            }
+                body.appendChild(btn);
+                body.appendChild(errorMsg);
+              }
 
-            fetch('/api/getParticipants?eventId=' + eventId)
-              .then(res => res.json())
-              .then(participants => {
-                p.textContent = 'Osalejad: ' + participants.map(x => x.fullname).join(', ');
-              });
+              fetch('/api/getParticipants?eventId=' + eventId)
+                .then(res => res.json())
+                .then(participants => {
+                  p.textContent = 'Osalejad: ' + participants.map(x => x.fullname).join(', ');
+                });
 
-            details.appendChild(body);
-            const wrapper = document.createElement('li');
-            wrapper.appendChild(details);
-            target.appendChild(wrapper);
-          });
-        };
+              details.appendChild(body);
+              const wrapper = document.createElement('li');
+              wrapper.appendChild(details);
+              target.appendChild(wrapper);
+            });
+          };
 
-        render(document.getElementById('eventList'), future, true);
-        render(document.getElementById('pastEventList'), past);
+          render(document.getElementById('eventList'), future, true);
+          render(document.getElementById('pastEventList'), past);
+        });
       })
       .catch(() => {
-        document.getElementById('myText').textContent = '❌ Pole sisselogitud';
+        document.getElementById('myText').textContent = '❌ Viga sündmuste laadimisel';
       });
   </script>
 </body>

@@ -6,16 +6,25 @@ const { sucess } = require('./main');
 
 const app = express();
 
+// Middleware
 app.use(express.static(path.join(__dirname, 'static')));
 app.use(express.json());
 app.use(session({
   secret: 'guitarium_super_secret',
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: true,
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: false // change to true if using HTTPS
+  }
 }));
 
+// Mount routes
 sucess(app);
 
-app.listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });
