@@ -13,6 +13,7 @@
       background-color: #ffffff;
       color: #111;
       text-align: center; /* Keep body text-align center for overall layout */
+      overflow-x: hidden; /* Prevent horizontal scrolling on the body */
     } 
     header {
       display: flex;
@@ -39,16 +40,15 @@
       width: 1.2em;
       height: 1.2em;
       flex-shrink: 0; /* Prevent icon from shrinking */
-      /* No specific vertical-align needed here, flexbox will handle */
     }
 
-    /* Styles for wider boxes and checkmark alignment */
+    /* Styles for list and individual boxes */
     ul { 
       list-style: none;
       padding: 0;
-      max-width: 1000px; /* MODIFIED: Increased max-width significantly to prevent cutoff */
+      /* Removed max-width from ul directly as details will control width */
       margin: 0 auto; /* Center the list */
-      padding: 0 10px; /* Add some horizontal padding */
+      padding: 0; /* Ensure no extra padding pushing content */
     }
     li {
       margin-bottom: 5px;
@@ -57,9 +57,9 @@
     }
     details {
       text-align: left; /* Ensure content inside details is left-aligned */
-      max-width: 100%; /* Allow details to take full width of its parent (ul) */
-      width: 100%; /* Ensure it takes available width */
-      margin: 0.5em auto; /* Adjust margin for individual details boxes */
+      width: 100%; /* Ensure it takes available width within its parent */
+      max-width: 400px; /* MODIFIED: Set a specific max-width for the details box itself */
+      margin: 0.5em auto; /* Center the details box horizontally */
       padding: 5px;
       border: 1px solid #ccc; /* Keep border from styles.css */
       border-radius: 6px; /* Keep border-radius from styles.css */
@@ -88,7 +88,6 @@
       margin-top: 5px;
     }
     button {
-
       border: none;
       padding: 6px 12px;
       border-radius: 4px;
@@ -114,6 +113,7 @@
     <button onclick="logout()">Logi välja</button>
   </header>
 
+  <!-- No main-content-wrapper needed here, as details will control their own width -->
   <h3 id="fixedInfo"></h3>
 
   <h1>Järgmised tunnid:</h1>
