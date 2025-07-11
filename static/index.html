@@ -36,7 +36,7 @@
         if (data.success) {
           localStorage.setItem('jwtToken', data.token); // Store JWT in localStorage
           // Redirect the entire parent window to the CapRover success URL
-          window.top.location.href = 'https://guitarium.apps.realsteal.online/success.html';
+          window.top.location.href = 'success.html';
         } else {
           errorMessage.textContent = 'Vale nimi või parool.';
         }
