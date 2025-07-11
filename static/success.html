@@ -46,7 +46,6 @@
     ul { 
       list-style: none;
       padding: 0;
-      /* Removed max-width from ul directly as details will control width */
       margin: 0 auto; /* Center the list */
       padding: 0; /* Ensure no extra padding pushing content */
     }
@@ -113,7 +112,6 @@
     <button onclick="logout()">Logi välja</button>
   </header>
 
-  <!-- No main-content-wrapper needed here, as details will control their own width -->
   <h3 id="fixedInfo"></h3>
 
   <h1>Järgmised tunnid:</h1>
@@ -163,12 +161,20 @@
         userId = me.id;
         group = me.group;
 
+        console.log('User group:', group); // DEBUG: Log the user's group
+
         const configResponse = await fetch('/config.json'); // config.json is public, no auth needed
         config = await configResponse.json();
 
+        console.log('Config for group:', config[group]); // DEBUG: Log the config entry for the group
+        
         const text = config[group]?.time || '';
+        console.log('Fixed time text:', text); // DEBUG: Log the 'time' value
+
+        // MODIFIED: Clearer message if 'time' is missing
         document.getElementById('fixedInfo').textContent =
-          `Oled registreerunud gruppi ${group} püsiajaga${text ? ' ' + text : ''}`;
+          `Oled registreerunud gruppi ${group}${text ? ' püsiajaga ' + text : ' (püsiaeg puudub)'}`;
+        
         const maxLimit = config[group]?.max || 6;
 
         // Fetch events using the JWT token
