@@ -168,7 +168,7 @@
 
         const text = config[group]?.time || '';
         document.getElementById('fixedInfo').textContent =
-          `Oled registreerunud ${group} püsiajaga${text ? ' ' + text : ''}`;
+          `Oled registreerunud gruppi ${group} püsiajaga${text ? ' ' + text : ''}`;
         const maxLimit = config[group]?.max || 6;
 
         // Fetch events using the JWT token
