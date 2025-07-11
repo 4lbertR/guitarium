@@ -159,22 +159,22 @@
         }
         const me = await meResponse.json();
         userId = me.id;
-        // FIX: Trim spaces from the group string to ensure a clean match with config.json keys
-        group = me.group ? me.group.trim() : ''; 
+        group = me.group;
 
-        console.log('User group (trimmed):', group); // DEBUG: Log the user's group after trimming
+        console.log('User group:', group); // DEBUG: Log the user's group
 
         const configResponse = await fetch('/config.json'); // config.json is public, no auth needed
         config = await configResponse.json();
 
-        console.log('Config for group (before access):', config[group]); // DEBUG: Log the config entry for the group
+        console.log('Config for group:', config[group]); // DEBUG: Log the config entry for the group
         
         const text = config[group]?.time || '';
         console.log('Fixed time text:', text); // DEBUG: Log the 'time' value
 
         // MODIFIED: Clearer message if 'time' is missing
         document.getElementById('fixedInfo').textContent =
-          `Oled registreerunud gruppi ${group}${text ? ' püsiajaga ' + text}`;
+          'Oled registreerunud gruppi ${group}'
+          //${text ? ' püsiajaga ' + text : ' (püsiaeg puudub)'}`
         
         const maxLimit = config[group]?.max || 6;
 
@@ -268,7 +268,7 @@
                         'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT
                       }
                     });
-                    const participants = await participants.json();
+                    const participants = await participantsRes.json();
                     p.textContent = 'Osalejad: ' + participants.map(x => x.fullname).join(', ');
 
                   } else {
