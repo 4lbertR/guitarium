@@ -94,7 +94,7 @@ async function listEvents(groupFilter) {
   const now = new Date();
   const result = await calendar.events.list({
     calendarId,
-    maxResults: 100,
+    maxResults: 130,
     singleEvents: true,
     orderBy: 'startTime'
   });
