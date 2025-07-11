@@ -5,21 +5,15 @@
   <title>Sündmused</title>
   <link rel="stylesheet" href="styles.css">
   <style>
-    /* Ensure no internal scrolling for the iframe content */
-    html, body {
-      overflow: hidden; /* Prevent scrolling within the iframe itself */
-      margin: 0;
-      padding: 0;
-      height: 100%; /* Ensure body takes full height for scrollHeight calculation */
-    }
-
+    /* Override or adjust styles from styles.css */
     body {
       font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
       background-color: #ffffff;
       color: #111;
-      text-align: center; /* Center content horizontally */
+      text-align: center; /* Keep body text-align center for overall layout */
     }
-
     header {
       display: flex;
       justify-content: space-between;
@@ -30,6 +24,7 @@
     }
     header img {
       height: 60px;
+      margin-bottom: 1px;
       width: auto;
     }
     details.joined {
@@ -44,14 +39,16 @@
       width: 1.2em;
       height: 1.2em;
       flex-shrink: 0; /* Prevent icon from shrinking */
+      /* No specific vertical-align needed here, flexbox will handle */
     }
 
+    /* Styles for wider boxes and checkmark alignment */
     ul {
       list-style: none;
       padding: 0;
-      max-width: 700px;
-      margin: 0 auto;
-      padding: 0 10px;
+      max-width: 700px; /* NEW: Increased max-width for the list */
+      margin: 0 auto; /* Center the list */
+      padding: 0 10px; /* Add some horizontal padding */
     }
     li {
       margin-bottom: 5px;
@@ -60,7 +57,7 @@
     }
     details {
       text-align: left; /* Ensure content inside details is left-aligned */
-      max-width: 100%; /* Allow details to take full width of its parent (ul) */
+      max-width: 100%; /* NEW: Allow details to take full width of its parent (ul) */
       width: 100%; /* Ensure it takes available width */
       margin: 0.5em auto; /* Adjust margin for individual details boxes */
       padding: 5px;
@@ -74,7 +71,7 @@
       padding: 0.4em 0.6em;
       display: flex; /* Use flexbox for alignment */
       align-items: center; /* Vertically center items */
-      justify-content: flex-start; /* Align items to the start (left) */
+      justify-content: flex-start; /* NEW: Align items to the start (left) */
       gap: 0.4em; /* Space between text and icon */
     }
     summary span {
@@ -91,7 +88,7 @@
       margin-top: 5px;
     }
     button {
-      color: white;
+
       border: none;
       padding: 6px 12px;
       border-radius: 4px;
@@ -132,14 +129,6 @@
     // Get the JWT token from localStorage
     let jwtToken = localStorage.getItem('jwtToken');
 
-    // Function to send height to the parent
-    function sendHeightToParent() {
-      // Use document.body.scrollHeight for the full content height
-      const height = document.body.scrollHeight;
-      // Send message to the parent window (guitarium.ee)
-      window.parent.postMessage({ type: 'iframeHeight', height: height }, 'https://guitarium.ee');
-    }
-
     function logout() {
       localStorage.removeItem('jwtToken'); // NEW: Remove JWT from localStorage
       window.location.href = '/'; // Redirect to login page
@@ -157,14 +146,16 @@
       let config = {};
 
       try {
+        // Fetch user data using the JWT token
         const meResponse = await fetch('/api/me', {
           headers: {
-            'Authorization': `Bearer ${jwtToken}`
+            'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT in Authorization header
           }
         });
 
         if (!meResponse.ok) {
-          localStorage.removeItem('jwtToken');
+          // If token is invalid or expired (e.g., 401/403 response), redirect to login
+          localStorage.removeItem('jwtToken'); // Clear invalid token
           window.location.href = '/';
           return;
         }
@@ -172,7 +163,7 @@
         userId = me.id;
         group = me.group;
 
-        const configResponse = await fetch('/config.json');
+        const configResponse = await fetch('/config.json'); // config.json is public, no auth needed
         config = await configResponse.json();
 
         const text = config[group]?.time || '';
@@ -180,9 +171,10 @@
           `Oled registreerunud ${group} püsiajaga${text ? ' ' + text : ''}`;
         const maxLimit = config[group]?.max || 6;
 
+        // Fetch events using the JWT token
         const eventsResponse = await fetch('/api/events', {
           headers: {
-            'Authorization': `Bearer ${jwtToken}`
+            'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT
           }
         });
         const data = await eventsResponse.json();
@@ -192,7 +184,7 @@
         let howmany = 0;
         howmany = future.filter(e => e[6].includes(userId)).length;
 
-        document.getElementById('joinedCount').textContent = `Liitunud ${howmany}/${maxLimit} tunniga`;
+        //document.getElementById('joinedCount').textContent = `Liitunud ${howmany}/${maxLimit} tunniga`;
         document.getElementById('myText').textContent = `Tulemas: ${future.length}, Möödunud: ${past.length}`;
 
         const render = (target, list, isFuture = false) => {
@@ -207,13 +199,13 @@
             const summaryTextSpan = document.createElement('span');
             summaryTextSpan.textContent = `${day}. ${month} ${year}, ${start}–${end}`;
 
-            summary.appendChild(summaryTextSpan);
+            summary.appendChild(summaryTextSpan); // Append text first
             if (hasJoined) {
                 const checkmarkImg = document.createElement('img');
                 checkmarkImg.src = '/checkbox.png';
                 checkmarkImg.alt = 'Joined';
                 checkmarkImg.classList.add('lesson-checkmark-icon');
-                summary.appendChild(checkmarkImg);
+                summary.appendChild(checkmarkImg); // Then append image
             }
 
             details.appendChild(summary);
@@ -229,13 +221,13 @@
               errorMsg.className = 'error-msg';
               errorMsg.style.display = 'none';
 
-              btn.onclick = async () => {
+              btn.onclick = async () => { // Changed to async function
                 btn.disabled = true;
                 const action = btn.textContent === 'Liitu' ? 'join' : 'leave';
                 try {
                   const res = await fetch(`/api/${action}?eventId=${eventId}`, {
                     headers: {
-                      'Authorization': `Bearer ${jwtToken}`
+                      'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT
                     }
                   });
                   const result = await res.json();
@@ -266,14 +258,11 @@
 
                     const participantsRes = await fetch('/api/getParticipants?eventId=' + eventId, {
                       headers: {
-                        'Authorization': `Bearer ${jwtToken}`
+                        'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT
                       }
                     });
                     const participants = await participantsRes.json();
                     p.textContent = 'Osalejad: ' + participants.map(x => x.fullname).join(', ');
-
-                    // Send new height after content change
-                    sendHeightToParent();
 
                   } else {
                     errorMsg.textContent =
@@ -299,21 +288,19 @@
               body.appendChild(errorMsg);
             }
 
+            // Initial fetch of participants for this event when the page loads
             fetch('/api/getParticipants?eventId=' + eventId, {
               headers: {
-                'Authorization': `Bearer ${jwtToken}`
+                'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT
               }
             })
               .then(res => res.json())
               .then(participants => {
                 p.textContent = 'Osalejad: ' + participants.map(x => x.fullname).join(', ');
-                // Send new height after participants are loaded
-                sendHeightToParent();
               })
               .catch(err => {
                 console.error('Error fetching initial participants for event ' + eventId, err);
                 p.textContent = 'Osalejate laadimisel tekkis viga.';
-                sendHeightToParent(); // Send height even on error
               });
 
             details.appendChild(body);
@@ -326,19 +313,10 @@
         render(document.getElementById('eventList'), future, true);
         render(document.getElementById('pastEventList'), past);
 
-        // Initial height send after all content is rendered
-        sendHeightToParent();
-
-        // Use ResizeObserver to send height updates if content changes (e.g., details expand/collapse)
-        const resizeObserver = new ResizeObserver(() => {
-            sendHeightToParent();
-        });
-        resizeObserver.observe(document.body);
-
       } catch (error) {
         console.error('Error initializing page:', error);
-        localStorage.removeItem('jwtToken');
-        window.location.href = '/';
+        localStorage.removeItem('jwtToken'); // Clear token if initialization fails
+        window.location.href = '/'; // Redirect to login
         document.getElementById('myText').textContent = '❌ Viga sündmuste laadimisel';
       }
     }
