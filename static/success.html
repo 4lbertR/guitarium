@@ -106,26 +106,44 @@
   <p id="myText">Laen...</p>
 
   <script>
+    // Get the JWT token from localStorage
+    let jwtToken = localStorage.getItem('jwtToken');
+
     function logout() {
-      fetch('/logout', { method: 'POST' }).then(() => location.href = '/');
+      localStorage.removeItem('jwtToken'); // NEW: Remove JWT from localStorage
+      window.location.href = '/'; // Redirect to login page
     }
 
     async function initializePage() {
+      // If no token, redirect to login
+      if (!jwtToken) {
+        window.location.href = '/';
+        return;
+      }
+
       let userId = '';
       let group = '';
       let config = {};
 
       try {
-        const meResponse = await fetch('/api/me');
+        // Fetch user data using the JWT token
+        const meResponse = await fetch('/api/me', {
+          headers: {
+            'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT in Authorization header
+          }
+        });
+
         if (!meResponse.ok) {
-          location.href = '/'; // Redirect the entire page
+          // If token is invalid or expired (e.g., 401/403 response), redirect to login
+          localStorage.removeItem('jwtToken'); // Clear invalid token
+          window.location.href = '/';
           return;
         }
         const me = await meResponse.json();
         userId = me.id;
         group = me.group;
 
-        const configResponse = await fetch('/config.json');
+        const configResponse = await fetch('/config.json'); // config.json is public, no auth needed
         config = await configResponse.json();
 
         const text = config[group]?.time || '';
@@ -133,7 +151,12 @@
           `Oled registreerunud ${group} püsiajaga${text ? ' ' + text : ''}`;
         const maxLimit = config[group]?.max || 6;
 
-        const eventsResponse = await fetch('/api/events');
+        // Fetch events using the JWT token
+        const eventsResponse = await fetch('/api/events', {
+          headers: {
+            'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT
+          }
+        });
         const data = await eventsResponse.json();
         const future = data.future || [];
         const past = data.past || [];
@@ -178,70 +201,86 @@
               errorMsg.className = 'error-msg';
               errorMsg.style.display = 'none';
 
-              btn.onclick = () => {
+              btn.onclick = async () => { // Changed to async function
                 btn.disabled = true;
                 const action = btn.textContent === 'Liitu' ? 'join' : 'leave';
-                fetch(`/api/${action}?eventId=${eventId}`)
-                  .then(res => res.json())
-                  .then(result => {
-                    errorMsg.style.display = 'none';
-                    if (result.success) {
-                      hasJoined = !hasJoined;
-                      details.classList.toggle('joined');
-                      btn.textContent = hasJoined ? 'Loobu' : 'Liitu';
-                      howmany += hasJoined ? 1 : -1;
-                      document.getElementById('joinedCount').textContent =
-                        `Liitunud ${howmany}/${maxLimit} tunniga`;
-
-                      const existingIcon = summary.querySelector('.lesson-checkmark-icon');
-                      if (hasJoined) { // User just joined, add icon
-                          if (!existingIcon) {
-                              const checkmarkImg = document.createElement('img');
-                              checkmarkImg.src = '/checkbox.png';
-                              checkmarkImg.alt = 'Joined';
-                              checkmarkImg.classList.add('lesson-checkmark-icon');
-                              summary.appendChild(checkmarkImg); // Append to the end
-                          }
-                      } else { // User just unjoined, remove icon
-                          if (existingIcon) {
-                              existingIcon.remove();
-                          }
-                      }
-
-                      return fetch('/api/getParticipants?eventId=' + eventId)
-                        .then(res => res.json())
-                        .then(participants => {
-                          p.textContent = 'Osalejad: ' + participants.map(x => x.fullname).join(', ');
-                        });
-                    } else {
-                      errorMsg.textContent =
-                        result.reason === 'too_late'
-                          ? 'Ei saa loobuda vähem kui 24h enne algust.'
-                          : result.reason === 'overflow'
-                            ? 'Sa oled liitunud maksimaalse arvu tunniga'
-                            : result.reason === 'full'
-                              ? 'Tund on täis.'
-                              : 'Toiming ebaõnnestus.';
-                      errorMsg.style.display = 'block';
+                try {
+                  const res = await fetch(`/api/${action}?eventId=${eventId}`, {
+                    headers: {
+                      'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT
                     }
-                  })
-                  .catch(() => {
-                    errorMsg.textContent = 'Võrguviga.';
-                    errorMsg.style.display = 'block';
-                  })
-                  .finally(() => {
-                    btn.disabled = false;
                   });
+                  const result = await res.json();
+                  
+                  errorMsg.style.display = 'none';
+                  if (result.success) {
+                    hasJoined = !hasJoined;
+                    details.classList.toggle('joined');
+                    btn.textContent = hasJoined ? 'Loobu' : 'Liitu';
+                    howmany += hasJoined ? 1 : -1;
+                    document.getElementById('joinedCount').textContent =
+                      `Liitunud ${howmany}/${maxLimit} tunniga`;
+
+                    const existingIcon = summary.querySelector('.lesson-checkmark-icon');
+                    if (hasJoined) {
+                        if (!existingIcon) {
+                            const checkmarkImg = document.createElement('img');
+                            checkmarkImg.src = '/checkbox.png';
+                            checkmarkImg.alt = 'Joined';
+                            checkmarkImg.classList.add('lesson-checkmark-icon');
+                            summary.appendChild(checkmarkImg);
+                        }
+                    } else {
+                        if (existingIcon) {
+                            existingIcon.remove();
+                        }
+                    }
+
+                    const participantsRes = await fetch('/api/getParticipants?eventId=' + eventId, {
+                      headers: {
+                        'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT
+                      }
+                    });
+                    const participants = await participantsRes.json();
+                    p.textContent = 'Osalejad: ' + participants.map(x => x.fullname).join(', ');
+
+                  } else {
+                    errorMsg.textContent =
+                      result.reason === 'too_late'
+                        ? 'Ei saa loobuda vähem kui 24h enne algust.'
+                        : result.reason === 'overflow'
+                          ? 'Sa oled liitunud maksimaalse arvu tunniga'
+                          : result.reason === 'full'
+                            ? 'Tund on täis.'
+                            : 'Toiming ebaõnnestus.';
+                    errorMsg.style.display = 'block';
+                  }
+                } catch (err) {
+                  console.error('Fetch error:', err);
+                  errorMsg.textContent = 'Võrguviga või serveri viga.';
+                  errorMsg.style.display = 'block';
+                } finally {
+                  btn.disabled = false;
+                }
               };
 
               body.appendChild(btn);
               body.appendChild(errorMsg);
             }
 
-            fetch('/api/getParticipants?eventId=' + eventId)
+            // Initial fetch of participants for this event when the page loads
+            fetch('/api/getParticipants?eventId=' + eventId, {
+              headers: {
+                'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT
+              }
+            })
               .then(res => res.json())
               .then(participants => {
                 p.textContent = 'Osalejad: ' + participants.map(x => x.fullname).join(', ');
+              })
+              .catch(err => {
+                console.error('Error fetching initial participants for event ' + eventId, err);
+                p.textContent = 'Osalejate laadimisel tekkis viga.';
               });
 
             details.appendChild(body);
@@ -256,6 +295,8 @@
 
       } catch (error) {
         console.error('Error initializing page:', error);
+        localStorage.removeItem('jwtToken'); // Clear token if initialization fails
+        window.location.href = '/'; // Redirect to login
         document.getElementById('myText').textContent = '❌ Viga sündmuste laadimisel';
       }
     }

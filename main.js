@@ -4,7 +4,7 @@ const { google } = require('googleapis');
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const session = require('express-session');
+const jwt = require('jsonwebtoken'); // NEW: Import jsonwebtoken
 
 require('dotenv').config();
 
@@ -34,17 +34,47 @@ const DB_CONFIG = {
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 const calendarId = process.env.GOOGLE_CALENDAR_ID;
+const JWT_SECRET = process.env.JWT_SECRET; // NEW: Get JWT secret from environment
+
+// Middleware to authenticate JWT token
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Expects 'Bearer TOKEN'
+
+  if (token == null) {
+    return res.status(401).json({ message: 'Authentication token required' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      // Token is invalid or expired
+      return res.status(403).json({ message: 'Invalid or expired token' });
+    }
+    // Attach user information from token to request object
+    req.userId = user.userId;
+    req.group = user.group;
+    next();
+  });
+}
 
 async function checkLogin(fullname, password) {
   const db = await mysql.createConnection(DB_CONFIG);
   const [rows] = await db.execute('SELECT password, grupp, id FROM users WHERE fullname = ? LIMIT 1', [fullname]);
   await db.end();
-  if (rows.length === 0) return { match: false, grupp: null, id: null };
-  return {
-    match: bcrypt.compareSync(password, rows[0].password),
-    grupp: rows[0].grupp,
-    id: rows[0].id
-  };
+  if (rows.length === 0) return { match: false };
+
+  const passwordMatch = bcrypt.compareSync(password, rows[0].password);
+  if (passwordMatch) {
+    // NEW: Generate JWT token on successful login
+    const token = jwt.sign(
+      { userId: rows[0].id, group: rows[0].grupp },
+      JWT_SECRET,
+      { expiresIn: '1h' } // Token expires in 1 hour
+    );
+    return { match: true, token: token };
+  } else {
+    return { match: false };
+  }
 }
 
 async function listEvents(groupFilter) {
@@ -113,14 +143,6 @@ async function join(eventId, userId) {
     return { success: false, reason: 'invalid_event_id_type' };
   }
 
-  const db = await mysql.createConnection(DB_CONFIG);
-  const [rows] = await db.execute('SELECT grupp FROM users WHERE id = ?', [userId]);
-  const group = rows[0]?.grupp;
-  await db.end();
-
-  const max = config[group]?.max || Infinity;
-  const ofEnabled = config[group]?.of === true;
-
   const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
   const authClient = await auth.getClient();
   const calendar = google.calendar({ version: 'v3', auth: authClient });
@@ -131,6 +153,14 @@ async function join(eventId, userId) {
     singleEvents: true,
     orderBy: 'startTime'
   });
+
+  const db = await mysql.createConnection(DB_CONFIG);
+  const [rows] = await db.execute('SELECT grupp FROM users WHERE id = ?', [userId]);
+  const group = rows[0]?.grupp;
+  await db.end();
+
+  const max = config[group]?.max || Infinity;
+  const ofEnabled = config[group]?.of === true;
 
   const userFutureJoins = (allEvents.data.items || []).filter(event => {
     const joined = (event.description || '')
@@ -206,7 +236,7 @@ async function leave(eventId, userId) {
   await calendar.events.patch({
     calendarId,
     eventId,
-    requestBody: { description: newDescription }
+    requestBody: { description: filtered.join('\n') }
   });
 
   return { success: true };
@@ -246,17 +276,7 @@ async function getParticipants(eventId) {
 }
 
 function sucess(app) {
-  app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: { 
-      secure: process.env.NODE_ENV === 'production', // MUST be true for SameSite=None
-      maxAge: 1000 * 60 * 60 * 24,
-      sameSite: 'None' // CRITICAL for iframes
-    } 
-  }));
-
+  // Login route is public, no JWT required for this one
   app.post('/login', async (req, res) => {
     const { fullname, password } = req.body;
     if (!fullname || !password) {
@@ -266,27 +286,29 @@ function sucess(app) {
     try {
       const result = await checkLogin(fullname, password);
       if (result.match) {
-        req.session.user = fullname;
-        req.session.group = result.grupp;
-        req.session.userId = result.id;
+        // Send token on successful login
+        res.json({ success: true, token: result.token });
+      } else {
+        res.json({ success: false, message: 'Invalid credentials' });
       }
-      res.json({ success: result.match, grupp: result.grupp });
     } catch (err) {
       console.error('Login error:', err.message);
       res.status(500).json({ success: false, message: 'Internal server error during login' });
     }
   });
 
+  // All routes below this line require authentication via JWT
+  app.use(authenticateToken); // Apply JWT authentication middleware to all subsequent routes
+
   app.get('/success.html', (req, res) => {
-    if (req.session.user) {
-      res.sendFile(path.join(__dirname, 'static', 'success.html'));
-    } else {
-      res.redirect('/');
-    }
+    // This route is now protected by authenticateToken.
+    // If the token is valid, req.userId and req.group will be available.
+    res.sendFile(path.join(__dirname, 'static', 'success.html'));
   });
 
   app.get('/api/events', async (req, res) => {
-    const group = req.session.group || null;
+    // Use req.group from the authenticated token
+    const group = req.group || null;
     try {
       const events = await listEvents(group);
       res.json(events);
@@ -298,9 +320,10 @@ function sucess(app) {
 
   app.get('/api/join', async (req, res) => {
     const { eventId } = req.query;
-    const userId = req.session.userId;
+    // Use req.userId from the authenticated token
+    const userId = req.userId;
 
-    if (!userId) {
+    if (!userId) { // Should not happen if authenticateToken works
       return res.status(403).json({ success: false, reason: 'not_authenticated' });
     }
     if (!eventId) {
@@ -318,9 +341,10 @@ function sucess(app) {
 
   app.get('/api/leave', async (req, res) => {
     const { eventId } = req.query;
-    const userId = req.session.userId;
+    // Use req.userId from the authenticated token
+    const userId = req.userId;
 
-    if (!userId) {
+    if (!userId) { // Should not happen if authenticateToken works
       return res.status(403).json({ success: false, reason: 'not_authenticated' });
     }
     if (!eventId) {
@@ -351,22 +375,19 @@ function sucess(app) {
   });
 
   app.get('/api/me', (req, res) => {
-    if (req.session?.userId && req.session.group) {
-      res.json({ id: req.session.userId, group: req.session.group });
+    // Use req.userId and req.group from the authenticated token
+    if (req.userId && req.group) {
+      res.json({ id: req.userId, group: req.group });
     } else {
+      // This else block should ideally not be reached if authenticateToken works
       res.status(401).json({});
     }
   });
 
   app.post('/logout', (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        console.error('Error destroying session:', err);
-        return res.status(500).json({ success: false, message: 'Logout failed' });
-      }
-      res.clearCookie('connect.sid');
-      res.redirect('/');
-    });
+    // With JWT, logout is primarily client-side (clearing the token).
+    // The server doesn't maintain session state for the user.
+    res.json({ success: true, message: 'Logged out successfully' });
   });
 
   app.get('/config.json', (req, res) => {

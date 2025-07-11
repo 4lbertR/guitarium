@@ -86,18 +86,9 @@
         const data = await response.json();
 
         if (data.success) {
-          // CRITICAL FIX: Redirect the entire parent window if inside an iframe
-          if (window.self !== window.top) {
-            // This assumes the parent window's URL is where the iframe is embedded,
-            // and that the parent should then load the /success.html content from your app.
-            // If the parent URL doesn't change, the iframe's src needs to be updated.
-            // For a Voog embed, the parent URL probably won't change, so we need to
-            // redirect the *top window* to the *CapRover success URL*.
-            window.top.location.href = 'https://guitarium.apps.realsteal.online/success.html';
-          } else {
-            // If not in an iframe, redirect normally to the app's success page
-            window.location.href = '/success.html';
-          }
+          localStorage.setItem('jwtToken', data.token); // NEW: Store JWT in localStorage
+          // Redirect the entire parent window to the CapRover success URL
+          window.top.location.href = 'https://guitarium.apps.realsteal.online/success.html';
         } else {
           errorMessage.textContent = 'Vale nimi või parool.';
         }

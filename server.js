@@ -11,8 +11,7 @@ app.use(express.static(path.join(__dirname, 'static')));
 app.use(express.json()); // For parsing JSON request bodies
 app.use(express.urlencoded({ extended: true })); // For parsing URL-encoded request bodies
 
-// The 'sucess' function from main.js sets up all your routes AND the session middleware.
-// CRITICAL: Ensure no duplicate session middleware is defined here.
+// The 'sucess' function from main.js sets up all your routes, including JWT authentication.
 sucess(app);
 
 // Serve the main login page (index.html) for the root URL
