@@ -3,38 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Logi sisse</title>
+  <title>Guitarium Login</title>
   <link rel="stylesheet" href="styles.css">
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      margin: 0;
-      background-color: #f0f2f5;
-      color: #333;
-    }
-
-    .login-container button:hover {
-      background-color: hsl(322, 50%, 41%); /* Purple hover */
-    }
-    .login-container .error-message {
-      color: red;
-      margin-top: 10px;
-      font-size: 0.9em;
-    }
-  </style>
 </head>
 <body>
-  <div class="login-container">
-    <h1>Logi sisse</h1>
+  <h1>Logi sisse</h1>
+  <form onsubmit="event.preventDefault(); login();">
     <input type="text" id="fullname" placeholder="Täisnimi" required>
     <input type="password" id="password" placeholder="Parool" required>
-    <button onclick="login()">Logi sisse</button>
-    <p id="errorMessage" class="error-message"></p>
-  </div>
+    <button type="submit">Logi sisse</button>
+  </form>
+  <p id="errorMessage" style="color: red;"></p>
 
   <script>
     async function login() {
@@ -55,7 +34,7 @@
         const data = await response.json();
 
         if (data.success) {
-          localStorage.setItem('jwtToken', data.token); // NEW: Store JWT in localStorage
+          localStorage.setItem('jwtToken', data.token); // Store JWT in localStorage
           // Redirect the entire parent window to the CapRover success URL
           window.top.location.href = 'https://guitarium.apps.realsteal.online/success.html';
         } else {
