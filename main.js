@@ -382,7 +382,7 @@ function sucess(app) {
       // This else block should ideally not be reached if authenticateToken works
       res.status(401).json({});
     }
-  });
+  }); 
 
   app.post('/logout', (req, res) => {
     // With JWT, logout is primarily client-side (clearing the token).
