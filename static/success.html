@@ -174,7 +174,7 @@
 
         // MODIFIED: Clearer message if 'time' is missing
         document.getElementById('fixedInfo').textContent =
-          `Oled registreerunud gruppi ${group}${text ? ' püsiajaga ' + text : ' (püsiaeg puudub)'}`;
+          `Oled registreerunud gruppi ${group}${text ? ' püsiajaga ' + text}`;
         
         const maxLimit = config[group]?.max || 6;
 
