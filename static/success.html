@@ -4,15 +4,15 @@
   <meta charset="UTF-8" />
   <title>Sündmused</title>
   <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
+    /* Override or adjust styles from styles.css */
     body {
       font-family: 'Segoe UI', sans-serif;
       margin: 0;
       padding: 0;
       background-color: #ffffff;
       color: #111;
-      font-family: 'Source Sans Pro', sans-serif;
+      text-align: center; /* Keep body text-align center for overall layout */
     }
     header {
       display: flex;
@@ -24,6 +24,7 @@
     }
     header img {
       height: 60px;
+      margin-bottom: 1px;
       width: auto;
     }
     details.joined {
@@ -32,36 +33,53 @@
     details.joined summary {
         background-color: hsl(322, 50%, 90%); /* Slightly darker light purple for the summary when joined */
         border-bottom: 1px solid hsl(322, 50%, 80%); /* Medium-light purple border */
-        padding: 0.6em 0.8em;
+        padding: 0.4em 0.6em;
     }
     .lesson-checkmark-icon {
       width: 1.2em;
       height: 1.2em;
-      vertical-align: middle;
-      margin-left: 0.4em; /* Margin to the left, as it's AFTER the text */
+      flex-shrink: 0; /* Prevent icon from shrinking */
+      /* No specific vertical-align needed here, flexbox will handle */
     }
 
-    /* Reduced spacing for overall event height */
+    /* Styles for wider boxes and checkmark alignment */
     ul {
       list-style: none;
       padding: 0;
+      max-width: 700px; /* NEW: Increased max-width for the list */
+      margin: 0 auto; /* Center the list */
+      padding: 0 10px; /* Add some horizontal padding */
     }
     li {
-      margin-bottom: 8px; /* Reduced margin between list items */
+      margin-bottom: 5px;
       border-radius: 5px;
       overflow: hidden;
     }
     details {
-      padding: 10px; /* Reduced padding inside details */
-      background-color: #f9f9f9; /* Default background for non-joined details */
+      text-align: left; /* Ensure content inside details is left-aligned */
+      max-width: 100%; /* NEW: Allow details to take full width of its parent (ul) */
+      width: 100%; /* Ensure it takes available width */
+      margin: 0.5em auto; /* Adjust margin for individual details boxes */
+      padding: 5px;
+      border: 1px solid #ccc; /* Keep border from styles.css */
+      border-radius: 6px; /* Keep border-radius from styles.css */
+      background: #f9f9f9; /* Default background for non-joined details */
     }
     summary {
       font-weight: bold;
       cursor: pointer;
-      padding: 0.6em 0.8em; /* Reduced padding for summary */
+      padding: 0.4em 0.6em;
+      display: flex; /* Use flexbox for alignment */
+      align-items: center; /* Vertically center items */
+      justify-content: flex-start; /* NEW: Align items to the start (left) */
+      gap: 0.4em; /* Space between text and icon */
+    }
+    summary span {
+        flex-grow: 0; /* Prevent text from growing unnecessarily */
+        white-space: nowrap; /* Keep text on one line if possible */
     }
     details div {
-      padding-top: 8px; /* Reduced padding above the content inside details */
+      padding-top: 5px;
     }
 
     .error-msg {
@@ -70,16 +88,16 @@
       margin-top: 5px;
     }
     button {
-      color: white;
+
       border: none;
-      padding: 8px 15px;
+      padding: 6px 12px;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 0.9em;
-      margin-top: 10px;
+      font-size: 0.8em;
+      margin-top: 8px;
     }
     button:hover {
-      /* This color should now be defined in styles.css */
+      background-color: hsl(322, 50%, 41%); /* Keep hover color consistent */
     }
     button:disabled {
       background-color: #cccccc;
@@ -166,7 +184,7 @@
         let howmany = 0;
         howmany = future.filter(e => e[6].includes(userId)).length;
 
-        document.getElementById('joinedCount').textContent = `Liitunud ${howmany}/${maxLimit} tunniga`;
+        //document.getElementById('joinedCount').textContent = `Liitunud ${howmany}/${maxLimit} tunniga`;
         document.getElementById('myText').textContent = `Tulemas: ${future.length}, Möödunud: ${past.length}`;
 
         const render = (target, list, isFuture = false) => {
