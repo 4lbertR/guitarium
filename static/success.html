@@ -159,14 +159,15 @@
         }
         const me = await meResponse.json();
         userId = me.id;
-        group = me.group;
+        // FIX: Trim spaces from the group string to ensure a clean match with config.json keys
+        group = me.group ? me.group.trim() : ''; 
 
-        console.log('User group:', group); // DEBUG: Log the user's group
+        console.log('User group (trimmed):', group); // DEBUG: Log the user's group after trimming
 
         const configResponse = await fetch('/config.json'); // config.json is public, no auth needed
         config = await configResponse.json();
 
-        console.log('Config for group:', config[group]); // DEBUG: Log the config entry for the group
+        console.log('Config for group (before access):', config[group]); // DEBUG: Log the config entry for the group
         
         const text = config[group]?.time || '';
         console.log('Fixed time text:', text); // DEBUG: Log the 'time' value
@@ -267,7 +268,7 @@
                         'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT
                       }
                     });
-                    const participants = await participantsRes.json();
+                    const participants = await participants.json();
                     p.textContent = 'Osalejad: ' + participants.map(x => x.fullname).join(', ');
 
                   } else {
