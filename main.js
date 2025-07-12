@@ -132,7 +132,36 @@ async function listEvents(groupFilter) {
     past: groupFilter ? pastevents[groupFilter] || [] : pastevents
   };
 }
+async function createAccount(fullname, password, group) {
+  if (!fullname || !password || !group) {
+    return { success: false, message: 'Full name, password, and group are required.' };
+  }
 
+  try {
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const db = await mysql.createConnection(DB_CONFIG);
+
+    const [result] = await db.execute(
+      'INSERT INTO users (fullname, password, grupp) VALUES (?, ?, ?)',
+      [fullname, hashedPassword, group]
+    );
+
+    await db.end();
+
+    if (result.affectedRows === 1) {
+      return { success: true, message: 'Account created successfully.', userId: result.insertId };
+    } else {
+      return { success: false, message: 'Failed to create account.' };
+    }
+
+  } catch (error) {
+    console.error('Error creating account:', error.message);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return { success: false, message: 'User with this full name already exists.' };
+    }
+    return { success: false, message: 'An internal server error occurred.' };
+  }
+}
 async function join(eventId, userId) {
   if (typeof userId !== 'number') {
     console.error('Error: userId is not a number in join function!', userId);
@@ -296,7 +325,23 @@ function sucess(app) {
       res.status(500).json({ success: false, message: 'Internal server error during login' });
     }
   });
-
+  app.post('/api/create-account', async (req, res) => {
+    const { adminUsername, adminPassword, fullname, password, group } = req.body;
+  
+    if (adminUsername !== 'admin_user' || adminPassword !== 'admin_pass_123') {
+      return res.status(403).json({ success: false, message: 'Unauthorized access: Invalid admin credentials.' });
+    }
+  
+    const result = await createAccount(fullname, password, group);
+    if (result.success) {
+      res.status(201).json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  });
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'createacc.html'));
+  });
   // All routes below this line require authentication via JWT
   app.use(authenticateToken); // Apply JWT authentication middleware to all subsequent routes
 
