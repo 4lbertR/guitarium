@@ -305,8 +305,8 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // For form submissions if needed
-app.use(express.static('static')); // Serve static files from 'static' folder
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static('static')); // Serves files like index.html, success.html from 'static' folder
 
 // Public routes (no JWT authentication required)
 app.post('/login', async (req, res) => {
@@ -328,7 +328,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// NEW: Admin Account Creation Endpoint (placed BEFORE authenticateToken middleware)
+// Admin Account Creation Endpoint (Public - placed BEFORE authenticateToken middleware)
 app.post('/api/create-account', async (req, res) => {
   const { adminUsername, adminPassword, fullname, password, group } = req.body;
 
@@ -344,13 +344,19 @@ app.post('/api/create-account', async (req, res) => {
   }
 });
 
-// Serve the createacc.html page
-app.get('/createacc.html', (req, res) => {
+// Serve the createacc.html page (Public)
+app.get('/createacc', (req, res) => { // Changed path to /createacc for clarity
   res.sendFile(path.join(__dirname, 'createacc.html'));
 });
 
+// Serve the config.json (Public)
 app.get('/config.json', (req, res) => {
   res.json(config);
+});
+
+// Default route for the main login page
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'static', 'index.html'));
 });
 
 // All routes below this line require authentication via JWT
@@ -439,10 +445,9 @@ app.post('/logout', (req, res) => {
 });
 
 app.get('/api/isadmin', (req,res) => {
-  // This endpoint is currently protected by authenticateToken.
-  // If you want a separate admin check, it needs to be implemented.
   res.status(501).json({ message: 'Not Implemented: Admin check logic needed.' });
 });
+
 
 // Start the server
 app.listen(port, () => {
