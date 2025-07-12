@@ -393,6 +393,10 @@ function sucess(app) {
   app.get('/config.json', (req, res) => {
     res.json(config);
   });
+
+  app.get('api/isadmin'), (req,res) => {
+    
+  }
 }
 
 module.exports = { sucess };
