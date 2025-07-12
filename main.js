@@ -302,7 +302,6 @@ async function getParticipants(eventId) {
 
 // Main Express app setup
 const app = express();
-const port = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -448,8 +447,5 @@ app.get('/api/isadmin', (req,res) => {
   res.status(501).json({ message: 'Not Implemented: Admin check logic needed.' });
 });
 
-
-// Start the server
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
+// Export the configured Express app instance
+module.exports = app;
