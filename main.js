@@ -4,7 +4,7 @@ const { google } = require('googleapis');
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const jwt = require('jsonwebtoken'); // NEW: Import jsonwebtoken
+const jwt = require('jsonwebtoken');
 
 require('dotenv').config();
 
@@ -34,12 +34,11 @@ const DB_CONFIG = {
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 const calendarId = process.env.GOOGLE_CALENDAR_ID;
-const JWT_SECRET = process.env.JWT_SECRET; // NEW: Get JWT secret from environment
+const JWT_SECRET = process.env.JWT_SECRET;
 
-// Middleware to authenticate JWT token
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Expects 'Bearer TOKEN'
+  const token = authHeader && authHeader.split(' ')[1];
 
   if (token == null) {
     return res.status(401).json({ message: 'Authentication token required' });
@@ -47,10 +46,8 @@ function authenticateToken(req, res, next) {
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      // Token is invalid or expired
       return res.status(403).json({ message: 'Invalid or expired token' });
     }
-    // Attach user information from token to request object
     req.userId = user.userId;
     req.group = user.group;
     next();
@@ -65,11 +62,10 @@ async function checkLogin(fullname, password) {
 
   const passwordMatch = bcrypt.compareSync(password, rows[0].password);
   if (passwordMatch) {
-    // NEW: Generate JWT token on successful login
     const token = jwt.sign(
       { userId: rows[0].id, group: rows[0].grupp },
       JWT_SECRET,
-      { expiresIn: '1h' } // Token expires in 1 hour
+      { expiresIn: '1h' }
     );
     return { match: true, token: token };
   } else {
@@ -304,144 +300,151 @@ async function getParticipants(eventId) {
   });
 }
 
-function sucess(app) {
-  // Login route is public, no JWT required for this one
-  app.post('/login', async (req, res) => {
-    const { fullname, password } = req.body;
-    if (!fullname || !password) {
-      return res.status(400).json({ success: false, message: 'Missing login fields' });
-    }
+// Main Express app setup
+const app = express();
+const port = process.env.PORT || 3000;
 
-    try {
-      const result = await checkLogin(fullname, password);
-      if (result.match) {
-        // Send token on successful login
-        res.json({ success: true, token: result.token });
-      } else {
-        res.json({ success: false, message: 'Invalid credentials' });
-      }
-    } catch (err) {
-      console.error('Login error:', err.message);
-      res.status(500).json({ success: false, message: 'Internal server error during login' });
-    }
-  });
-  app.post('/api/create-account', async (req, res) => {
-    const { adminUsername, adminPassword, fullname, password, group } = req.body;
-  
-    if (adminUsername !== 'admin_user' || adminPassword !== 'admin_pass_123') {
-      return res.status(403).json({ success: false, message: 'Unauthorized access: Invalid admin credentials.' });
-    }
-  
-    const result = await createAccount(fullname, password, group);
-    if (result.success) {
-      res.status(201).json(result);
-    } else {
-      res.status(400).json(result);
-    }
-  });
-  app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'createacc.html'));
-  });
-  // All routes below this line require authentication via JWT
-  app.use(authenticateToken); // Apply JWT authentication middleware to all subsequent routes
+app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // For form submissions if needed
+app.use(express.static('static')); // Serve static files from 'static' folder
 
-  app.get('/success.html', (req, res) => {
-    // This route is now protected by authenticateToken.
-    // If the token is valid, req.userId and req.group will be available.
-    res.sendFile(path.join(__dirname, 'static', 'success.html'));
-  });
-
-  app.get('/api/events', async (req, res) => {
-    // Use req.group from the authenticated token
-    const group = req.group || null;
-    try {
-      const events = await listEvents(group);
-      res.json(events);
-    } catch (err) {
-      console.error('Error fetching events:', err.message);
-      res.status(500).json({ future: [], past: [], message: 'Error fetching events' });
-    }
-  });
-
-  app.get('/api/join', async (req, res) => {
-    const { eventId } = req.query;
-    // Use req.userId from the authenticated token
-    const userId = req.userId;
-
-    if (!userId) { // Should not happen if authenticateToken works
-      return res.status(403).json({ success: false, reason: 'not_authenticated' });
-    }
-    if (!eventId) {
-      return res.status(400).json({ success: false, reason: 'missing_event_id' });
-    }
-
-    try {
-      const joined = await join(eventId, userId);
-      res.json(joined);
-    } catch (err) {
-      console.error('Join failed:', err.message);
-      res.status(500).json({ success: false, reason: 'internal_error', message: err.message });
-    }
-  });
-
-  app.get('/api/leave', async (req, res) => {
-    const { eventId } = req.query;
-    // Use req.userId from the authenticated token
-    const userId = req.userId;
-
-    if (!userId) { // Should not happen if authenticateToken works
-      return res.status(403).json({ success: false, reason: 'not_authenticated' });
-    }
-    if (!eventId) {
-      return res.status(400).json({ success: false, reason: 'missing_event_id' });
-    }
-
-    try {
-      const result = await leave(eventId, userId);
-      res.json(result);
-    } catch (err) {
-      console.error('Leave failed:', err.message);
-      res.status(500).json({ success: false, reason: 'internal_error', message: err.message });
-    }
-  });
-
-  app.get('/api/getParticipants', async (req, res) => {
-    const { eventId } = req.query;
-    if (!eventId) {
-      return res.status(400).json([]);
-    }
-    try {
-      const participants = await getParticipants(eventId);
-      res.json(participants);
-    } catch (err) {
-      console.error('Participant fetch failed:', err.message);
-      res.status(500).json([]);
-    }
-  });
-
-  app.get('/api/me', (req, res) => {
-    // Use req.userId and req.group from the authenticated token
-    if (req.userId && req.group) {
-      res.json({ id: req.userId, group: req.group });
-    } else {
-      // This else block should ideally not be reached if authenticateToken works
-      res.status(401).json({});
-    }
-  }); 
-
-  app.post('/logout', (req, res) => {
-    // With JWT, logout is primarily client-side (clearing the token).
-    // The server doesn't maintain session state for the user.
-    res.json({ success: true, message: 'Logged out successfully' });
-  });
-
-  app.get('/config.json', (req, res) => {
-    res.json(config);
-  });
-
-  app.get('api/isadmin'), (req,res) => {
-    
+// Public routes (no JWT authentication required)
+app.post('/login', async (req, res) => {
+  const { fullname, password } = req.body;
+  if (!fullname || !password) {
+    return res.status(400).json({ success: false, message: 'Missing login fields' });
   }
-}
 
-module.exports = { sucess };
+  try {
+    const result = await checkLogin(fullname, password);
+    if (result.match) {
+      res.json({ success: true, token: result.token });
+    } else {
+      res.json({ success: false, message: 'Invalid credentials' });
+    }
+  } catch (err) {
+    console.error('Login error:', err.message);
+    res.status(500).json({ success: false, message: 'Internal server error during login' });
+  }
+});
+
+// NEW: Admin Account Creation Endpoint (placed BEFORE authenticateToken middleware)
+app.post('/api/create-account', async (req, res) => {
+  const { adminUsername, adminPassword, fullname, password, group } = req.body;
+
+  if (adminUsername !== 'admin_user' || adminPassword !== 'admin_pass_123') {
+    return res.status(403).json({ success: false, message: 'Unauthorized access: Invalid admin credentials.' });
+  }
+
+  const result = await createAccount(fullname, password, group);
+  if (result.success) {
+    res.status(201).json(result);
+  } else {
+    res.status(400).json(result);
+  }
+});
+
+// Serve the createacc.html page
+app.get('/createacc.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'createacc.html'));
+});
+
+app.get('/config.json', (req, res) => {
+  res.json(config);
+});
+
+// All routes below this line require authentication via JWT
+app.use(authenticateToken); // Apply JWT authentication middleware to all subsequent routes
+
+// Protected routes
+app.get('/success.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'static', 'success.html'));
+});
+
+app.get('/api/events', async (req, res) => {
+  const group = req.group || null;
+  try {
+    const events = await listEvents(group);
+    res.json(events);
+  } catch (err) {
+    console.error('Error fetching events:', err.message);
+    res.status(500).json({ future: [], past: [], message: 'Error fetching events' });
+  }
+});
+
+app.get('/api/join', async (req, res) => {
+  const { eventId } = req.query;
+  const userId = req.userId;
+
+  if (!userId) {
+    return res.status(403).json({ success: false, reason: 'not_authenticated' });
+  }
+  if (!eventId) {
+    return res.status(400).json({ success: false, reason: 'missing_event_id' });
+  }
+
+  try {
+    const joined = await join(eventId, userId);
+    res.json(joined);
+  } catch (err) {
+    console.error('Join failed:', err.message);
+    res.status(500).json({ success: false, reason: 'internal_error', message: err.message });
+  }
+});
+
+app.get('/api/leave', async (req, res) => {
+  const { eventId } = req.query;
+  const userId = req.userId;
+
+  if (!userId) {
+    return res.status(403).json({ success: false, reason: 'not_authenticated' });
+  }
+  if (!eventId) {
+    return res.status(400).json({ success: false, reason: 'missing_event_id' });
+  }
+
+  try {
+    const result = await leave(eventId, userId);
+    res.json(result);
+  } catch (err) {
+    console.error('Leave failed:', err.message);
+    res.status(500).json({ success: false, reason: 'internal_error', message: err.message });
+  }
+});
+
+app.get('/api/getParticipants', async (req, res) => {
+  const { eventId } = req.query;
+  if (!eventId) {
+    return res.status(400).json([]);
+  }
+  try {
+    const participants = await getParticipants(eventId);
+    res.json(participants);
+  } catch (err) {
+    console.error('Participant fetch failed:', err.message);
+    res.status(500).json([]);
+  }
+});
+
+app.get('/api/me', (req, res) => {
+  if (req.userId && req.group) {
+    res.json({ id: req.userId, group: req.group });
+  } else {
+    res.status(401).json({});
+  }
+}); 
+
+app.post('/logout', (req, res) => {
+  res.json({ success: true, message: 'Logged out successfully' });
+});
+
+app.get('/api/isadmin', (req,res) => {
+  // This endpoint is currently protected by authenticateToken.
+  // If you want a separate admin check, it needs to be implemented.
+  res.status(501).json({ message: 'Not Implemented: Admin check logic needed.' });
+});
+
+// Start the server
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+});
