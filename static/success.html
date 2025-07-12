@@ -57,8 +57,9 @@
     @media (max-width: 468px){
       details {
         text-align: left; /* Ensure content inside details is left-aligned */
-        width: 50%; /* Ensure it takes available width within its parent */
+        width: calc(100%-20px);  
         max-width: 200px; /* MODIFIED: Set a specific max-width for the details box itself */
+        box-sizing: border-box;
         margin: 0.5em auto; /* Center the details box horizontally */
         padding: 5px;
         border: 1px solid #ccc; /* Keep border from styles.css */
