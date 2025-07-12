@@ -62,15 +62,6 @@ button:hover {
   border-radius:%204px;$0
 }
 
-details {
-  text-align: left;
-  max-width: 300px;
-  margin: 1em auto;
-  padding: 1em;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background: #f8f8f8;
-}
 summary {
   font-weight: bold;
   cursor: pointer;
