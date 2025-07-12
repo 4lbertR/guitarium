@@ -36,8 +36,7 @@
 
         if (data.success) {
           localStorage.setItem('jwtToken', data.token); // Store JWT in localStorage
-          // CRITICAL FIX: Redirect the iframe itself to the success page
-          window.location.href = '/success.html'; // This will load success.html inside the current iframe
+          window.location.href = '/success.html'; // Redirect to the success page
         } else {
           errorMessage.textContent = 'Vale nimi või parool.';
         }

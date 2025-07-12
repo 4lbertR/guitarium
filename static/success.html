@@ -57,8 +57,8 @@
     @media (max-width: 468px){
       details {
         text-align: left; /* Ensure content inside details is left-aligned */
-        width: calc(100%-40px);  
-        max-width: 200px; /* MODIFIED: Set a specific max-width for the details box itself */
+        width: calc(100% - 20px); /* Corrected from 40px to 20px to match body padding */
+        max-width: none; /* Removed max-width for fluidity on mobile */
         box-sizing: border-box;
         margin: 0.5em auto; /* Center the details box horizontally */
         padding: 5px;
@@ -256,7 +256,7 @@
                     //document.getElementById('joinedCount').textContent =
                       //`Liitunud ${howmany}/${maxLimit} tunniga`;
 
-                    const existinˇcon = summary.querySelector('.lesson-checkmark-icon');
+                    const existingIcon = summary.querySelector('.lesson-checkmark-icon'); // Corrected typo
                     if (hasJoined) {
                         if (!existingIcon) {
                             const checkmarkImg = document.createElement('img');
