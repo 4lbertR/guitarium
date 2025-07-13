@@ -63,7 +63,7 @@ async function checkLogin(fullname, password) {
   const passwordMatch = bcrypt.compareSync(password, rows[0].password);
   if (passwordMatch) {
     const token = jwt.sign(
-      { userId: rows[0].id, group: rows[0].grupp },
+      { userId: rows[0].id, group: rows[0].grupp, fullname: rows[0].fullname },
       JWT_SECRET,
       { expiresIn: '1h' }
     );
@@ -132,30 +132,21 @@ async function createAccount(fullname, password, group) {
   if (!fullname || !password || !group) {
     return { success: false, message: 'Full name, password, and group are required.' };
   }
-
   try {
     const hashedPassword = await bcrypt.hash(password, 12);
     const db = await mysql.createConnection(DB_CONFIG);
-
     const [result] = await db.execute(
       'INSERT INTO users (fullname, password, grupp) VALUES (?, ?, ?)',
       [fullname, hashedPassword, group]
     );
-
     await db.end();
 
-    if (result.affectedRows === 1) {
-      return { success: true, message: 'Account created successfully.', userId: result.insertId };
-    } else {
-      return { success: false, message: 'Failed to create account.' };
-    }
+    if (result.affectedRows === 1) {return { success: true, message: 'Account created successfully.', userId: result.insertId };
+    } else {return { success: false, message: 'Failed to create account.' };}
 
   } catch (error) {
     console.error('Error creating account:', error.message);
-    if (error.code === 'ER_DUP_ENTRY') {
-      return { success: false, message: 'User with this full name already exists.' };
-    }
-    return { success: false, message: 'An internal server error occurred.' };
+    if (error.code === 'ER_DUP_ENTRY') {return { success: false, message: 'User with this full name already exists.' };}
   }
 }
 async function join(eventId, userId) {
@@ -226,14 +217,6 @@ async function join(eventId, userId) {
 }
 
 async function leave(eventId, userId) {
-  if (typeof userId !== 'number') {
-    console.error('Error: userId is not a number in leave function!', userId);
-    return { success: false, reason: 'invalid_user_id_type' };
-  }
-  if (typeof eventId !== 'string') {
-    console.error('Error: eventId is not a string in leave function!', eventId);
-    return { success: false, reason: 'invalid_event_id_type' };
-  }
 
   const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
   const authClient = await auth.getClient();
@@ -321,7 +304,7 @@ function setupAppRoutes(app) {
         else{res.json({success:true, token: result.token})}
       }
        else {
-        res.json({ success: false, message: 'Invalid credentials' });
+        res.json({ success: false, message: 'Vale nimi või parool' });
       }
     } catch (err) {
       console.error('Login error:', err.message);
@@ -329,11 +312,9 @@ function setupAppRoutes(app) {
     }
   });
 
-  // Public Account Creation Endpoint - NO ADMIN CREDENTIALS REQUIRED
-  app.post('/api/create-account', async (req, res) => {
-    const { fullname, password, group } = req.body; // No adminUsername/adminPassword expected
 
-    // Directly call createAccount with the provided user details
+  app.post('/api/create-account', async (req, res) => {
+    const { fullname, password, group } = req.body; 
     const result = await createAccount(fullname, password, group);
     if (result.success) {
       res.status(201).json(result);
@@ -437,8 +418,13 @@ function setupAppRoutes(app) {
   });
 
   app.get('/api/isadmin', (req,res) => {
-    res.status(501).json({ message: 'Not Implemented: Admin check logic needed.' });
+    if (req.fullname=='Julia Reinman'){
+      res.json({admin: true });
+    }
+    else{
+      res.status(403).json({admin:false})
+    }
   });
-}
+} 
 
 module.exports = { sucess: setupAppRoutes };
