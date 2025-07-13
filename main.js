@@ -362,9 +362,6 @@ function setupAppRoutes(app) {
     }
   });
 
-  // Apply requireAdmin middleware to all GET requests that come AFTER this point
-  // This means any static files served by app.use(express.static('static'))
-  // or explicit app.get routes defined below will be admin-protected.
   app.use(requireAdmin);
 
   app.get('/success.html', (req, res) => {
