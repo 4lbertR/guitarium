@@ -1,27 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="../styles.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Account</title>
-    
+    <title>Admin Panel</title>
 </head>
 <body>
 
-    <div class="container">
-        <h2>Create New User Account</h2>
-
-        
-    </div>
+    <form action="/createacc.html">
+        <button>Loo Konto</button>
+    </form>
 
     <script>
-        const isadmin = await fetch('/api/isadmin', {
-              headers: {
-                'Authorization': `Bearer ${jwtToken}`
-              }
-            });
-        if(!isadmin){window.location.href = '/success.html'}
+        const jwtToken = localStorage.getItem('jwtToken');
+        async function checkAdminAccess() {
+            v
+
+            if (!jwtToken) {
+                window.location.href = '/';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/isadmin', {
+                    headers: {
+                        'Authorization': `Bearer ${jwtToken}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!data.admin) {
+                    window.location.href = '/success.html';
+                }
+            } catch (error) {
+                console.error('Error checking admin status:', error);
+                localStorage.removeItem('jwtToken');
+                window.location.href = '/';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', checkAdminAccess);
     </script>
 </body>
 </html>

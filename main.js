@@ -361,7 +361,7 @@ function setupAppRoutes(app) {
       res.status(403).json({admin:false})
     }
   });
-
+ 
   app.use(requireAdmin);
 
   app.get('/success.html', (req, res) => {
