@@ -5,7 +5,8 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
-const admins = ['Julia Reinman','admin']
+const admins = ['Julia Reinman', 'admin'];
+
 require('dotenv').config();
 
 const key = {
@@ -54,27 +55,13 @@ function authenticateToken(req, res, next) {
     next();
   });
 }
-function isadmin(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
 
-  if (token == null) {
-    return res.status(401).json({ message: 'Authentication token required' });
-  }
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ message: 'Invalid or expired token' });
+function requireAdmin(req, res, next) {
+    if (req.fullname && admins.includes(req.fullname)) {
+        next();
+    } else {
+        return res.status(403).json({ message: 'Admin access required' });
     }
-    req.userId = user.userId;
-    req.group = user.group;
-    req.fullname = user.fullname;
-
-    if (req.fullname in admins){
-      next();
-    }
-    else{return res.status(403).json({message:'Not an admin'})}
-  });
 }
 
 async function checkLogin(fullname, password) {
@@ -170,7 +157,7 @@ async function createAccount(fullname, password, group) {
   } catch (error) {
     console.error('Error creating account:', error.message);
     if (error.code === 'ER_DUP_ENTRY') {return { success: false, message: 'User with this full name already exists.' };}
-    return { success: false, message: 'An internal server error occurred.' }; // Added return for generic error
+    return { success: false, message: 'An internal server error occurred.' };
   }
 }
 async function join(eventId, userId) {
@@ -330,7 +317,7 @@ function setupAppRoutes(app) {
     try {
       const result = await checkLogin(fullname, password);
       if (result.match) {
-        if (fullname=='Julia Reinman'){res.json({ success: true, token: result.token, admin:true });}
+        if (admins.includes(fullname)){res.json({ success: true, token: result.token, admin:true });}
         else{res.json({success:true, token: result.token})}
       }
        else {
@@ -365,6 +352,19 @@ function setupAppRoutes(app) {
   }); 
 
   app.use(authenticateToken);
+
+  app.get('/api/isadmin', (req,res) => {
+    if (admins.includes(req.fullname)){
+      res.json({admin: true });
+    }
+    else{
+      res.status(403).json({admin:false})
+    }
+  });
+
+  app.get('/admin/index.html', requireAdmin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'static', 'admin', 'index.html'));
+  });
 
   app.get('/success.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'static', 'success.html'));
@@ -447,13 +447,6 @@ function setupAppRoutes(app) {
     res.json({ success: true, message: 'Logged out successfully' });
   });
 
-
-
-  app.use(isadmin())
-  
-  app.get('/api/isadmin', (req,res) => {
-    res.json({admin: true})
-  });
 } 
 
 module.exports = { sucess: setupAppRoutes };
