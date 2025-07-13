@@ -50,14 +50,12 @@
                 window.location.href = '/';
                 return;
             }
-
             try {
                 const response = await fetch('/api/isadmin', {
                     headers: {
                         'Authorization': `Bearer ${jwtToken}`
                     }
                 });
-
                 const data = await response.json();
 
                 if (!data.admin) {

@@ -60,7 +60,7 @@ function requireAdmin(req, res, next) {
     if (req.fullname && admins.includes(req.fullname)) {
         next();
     } else {
-        return res.status(403).json({ message: 'Admin access required' });
+        return res.status(403).json({ message: req.fullname });
     }
 }
 
@@ -337,7 +337,7 @@ function setupAppRoutes(app) {
     res.sendFile(path.join(__dirname, 'static', 'index.html'));
   }); 
 
-  app.use(authenticateToken);
+  app.use(requireAdmin);
 
   app.get('/api/isadmin', (req,res) => {
     if (admins.includes(req.fullname)){
@@ -349,7 +349,7 @@ function setupAppRoutes(app) {
   });
 
   // All routes below this point require ADMIN authentication
-  app.use(requireAdmin);
+  app.use(authenticateToken);
 
   app.post('/api/create-account', async (req, res) => {
     const { fullname, password, group } = req.body; 
