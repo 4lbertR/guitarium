@@ -60,7 +60,7 @@ function requireAdmin(req, res, next) {
     if (req.fullname && admins.includes(req.fullname)) {
         next();
     } else {
-        return res.status(403).json({ message: req.fullname });
+        return res.status(403).json({ message: 'Admin access required' });
     }
 }
 
@@ -337,8 +337,10 @@ function setupAppRoutes(app) {
     res.sendFile(path.join(__dirname, 'static', 'index.html'));
   }); 
 
-  app.use(requireAdmin);
+  // Apply authentication to all routes below this point
+  app.use(authenticateToken);
 
+  // This API endpoint allows any authenticated user to check their admin status
   app.get('/api/isadmin', (req,res) => {
     if (admins.includes(req.fullname)){
       res.json({admin: true });
@@ -346,27 +348,6 @@ function setupAppRoutes(app) {
     else{
       res.status(403).json({admin:false})
     }
-  });
-
-  // All routes below this point require ADMIN authentication
-  app.use(authenticateToken);
-
-  app.post('/api/create-account', async (req, res) => {
-    const { fullname, password, group } = req.body; 
-    const result = await createAccount(fullname, password, group);
-    if (result.success) {
-      res.status(201).json(result);
-    } else {
-      res.status(400).json(result);
-    }
-  });
-
-  app.get('/createacc', (req, res) => {
-    res.sendFile(path.join(__dirname, 'createacc.html'));
-  });
-
-  app.get('/admin/index.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'static', 'admin', 'index.html'));
   });
 
   app.get('/success.html', (req, res) => {
@@ -450,6 +431,27 @@ function setupAppRoutes(app) {
     res.json({ success: true, message: 'Logged out successfully' });
   });
 
+  // Apply requireAdmin middleware to all routes below this point
+  // This ensures only admins can access these resources.
+  app.use(requireAdmin);
+
+  app.post('/api/create-account', async (req, res) => {
+    const { fullname, password, group } = req.body; 
+    const result = await createAccount(fullname, password, group);
+    if (result.success) {
+      res.status(201).json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  });
+
+  app.get('/createacc', (req, res) => {
+    res.sendFile(path.join(__dirname, 'createacc.html'));
+  });
+
+  app.get('/admin/index.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'static', 'admin', 'index.html'));
+  });
 } 
 
 module.exports = { sucess: setupAppRoutes };
