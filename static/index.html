@@ -7,7 +7,7 @@
   <title>Guitarium Login</title>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body onload="loggedin()">
   <h1>Logi sisse</h1>
   <form onsubmit="event.preventDefault(); login();">
     <input type="text" id="fullname" placeholder="Ees- ja perekonnanimi" required>
@@ -17,6 +17,15 @@
   <p id="errorMessage" style="color: red;"></p>
 
   <script>
+  function loggedin() {
+      const token = localStorage.getItem('jwtToken');
+      if (token) {
+          console.log('User is logged in. Redirecting...');
+          window.location.href = '/success.html';
+      } else {
+          console.log('User is not logged in.');
+      }
+  }
     async function login() {
       const fullname = document.getElementById('fullname').value.trim();
       const password = document.getElementById('password').value;
