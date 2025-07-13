@@ -329,20 +329,6 @@ function setupAppRoutes(app) {
     }
   });
 
-  app.post('/api/create-account', async (req, res) => {
-    const { fullname, password, group } = req.body; 
-    const result = await createAccount(fullname, password, group);
-    if (result.success) {
-      res.status(201).json(result);
-    } else {
-      res.status(400).json(result);
-    }
-  });
-
-  app.get('/createacc', (req, res) => {
-    res.sendFile(path.join(__dirname, 'createacc.html'));
-  });
-
   app.get('/config.json', (req, res) => {
     res.json(config);
   });
@@ -361,8 +347,27 @@ function setupAppRoutes(app) {
       res.status(403).json({admin:false})
     }
   });
- 
+
+  // All routes below this point require ADMIN authentication
   app.use(requireAdmin);
+
+  app.post('/api/create-account', async (req, res) => {
+    const { fullname, password, group } = req.body; 
+    const result = await createAccount(fullname, password, group);
+    if (result.success) {
+      res.status(201).json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  });
+
+  app.get('/createacc', (req, res) => {
+    res.sendFile(path.join(__dirname, 'createacc.html'));
+  });
+
+  app.get('/admin/index.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'static', 'admin', 'index.html'));
+  });
 
   app.get('/success.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'static', 'success.html'));
