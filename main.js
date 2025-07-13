@@ -62,13 +62,11 @@ async function checkLogin(fullname, password) {
 
   const passwordMatch = bcrypt.compareSync(password, rows[0].password);
   if (passwordMatch) {
-    if
     const token = jwt.sign(
       { userId: rows[0].id, group: rows[0].grupp },
       JWT_SECRET,
       { expiresIn: '1h' }
     );
-    
     return { match: true, token: token };
   } else {
     return { match: false };
@@ -307,7 +305,7 @@ function setupAppRoutes(app) {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(express.static('static'));
-  app.use(express.static(__dirname));
+  app.use(express.static(__dirname)); // To serve createacc.html from root
 
   // Public routes (no JWT authentication required)
   app.post('/login', async (req, res) => {
@@ -319,8 +317,10 @@ function setupAppRoutes(app) {
     try {
       const result = await checkLogin(fullname, password);
       if (result.match) {
-        res.json({ success: true, token: result.token });
-      } else {
+        if (fullname=='Julia Reinman'){res.json({ success: true, token: result.token, admin:true });}
+        else{res.json({success:true, token: result.token})}
+      }
+       else {
         res.json({ success: false, message: 'Invalid credentials' });
       }
     } catch (err) {
@@ -352,9 +352,7 @@ function setupAppRoutes(app) {
 
   app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'static', 'index.html'));
-  });
-
-  // All routes below this line require authentication via JWT
+  }); 
   app.use(authenticateToken);
 
   app.get('/success.html', (req, res) => {

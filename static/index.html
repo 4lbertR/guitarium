@@ -36,8 +36,14 @@
 
         if (data.success) {
           localStorage.setItem('jwtToken', data.token); // Store JWT in localStorage
-          window.location.href = '/success.html'; // Redirect to the success page
-        } else {
+          if (data.admin) {
+            window.location.href= '/admin/index.html'
+            console.log(admin)
+          }
+          else
+          {window.location.href = '/success.html'; // Redirect to the success page
+        }} 
+        else {
           errorMessage.textContent = 'Vale nimi või parool.';
         }
       } catch (error) {
