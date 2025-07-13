@@ -84,11 +84,12 @@
             messageDiv.className = '';
 
             try {
+                const jwtToken = localStorage.getItem('jwtToken'); // Get token here before sending request
                 const response = await fetch('/api/create-account', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('jwtToken')}` // Ensure token is sent for admin-protected endpoint
+                        'Authorization': `Bearer ${jwtToken}` // ADDED: Send JWT token
                     },
                     body: JSON.stringify({ fullname, password, group })
                 });
