@@ -73,6 +73,13 @@
             }
         });
     </script>
-
+    <script>
+        const isadmin = await fetch('/api/isadmin', {
+              headers: {
+                'Authorization': `Bearer ${jwtToken}`
+              }
+            });
+        if(!isadmin){window.location.href = '/success.html'}
+    </script>
 </body>
 </html>

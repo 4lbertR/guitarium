@@ -50,13 +50,14 @@ function authenticateToken(req, res, next) {
     }
     req.userId = user.userId;
     req.group = user.group;
+    req.fullname = user.fullname; // NEW: Attach fullname from token to request
     next();
   });
 }
 
 async function checkLogin(fullname, password) {
   const db = await mysql.createConnection(DB_CONFIG);
-  const [rows] = await db.execute('SELECT password, grupp, id FROM users WHERE fullname = ? LIMIT 1', [fullname]);
+  const [rows] = await db.execute('SELECT password, grupp, id, fullname FROM users WHERE fullname = ? LIMIT 1', [fullname]);
   await db.end();
   if (rows.length === 0) return { match: false };
 
@@ -147,6 +148,7 @@ async function createAccount(fullname, password, group) {
   } catch (error) {
     console.error('Error creating account:', error.message);
     if (error.code === 'ER_DUP_ENTRY') {return { success: false, message: 'User with this full name already exists.' };}
+    return { success: false, message: 'An internal server error occurred.' }; // Added return for generic error
   }
 }
 async function join(eventId, userId) {
@@ -217,6 +219,14 @@ async function join(eventId, userId) {
 }
 
 async function leave(eventId, userId) {
+  if (typeof userId !== 'number') {
+    console.error('Error: userId is not a number in leave function!', userId);
+    return { success: false, reason: 'invalid_user_id_type' };
+  }
+  if (typeof eventId !== 'string') {
+    console.error('Error: eventId is not a string in leave function!', eventId);
+    return { success: false, reason: 'invalid_event_id_type' };
+  }
 
   const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
   const authClient = await auth.getClient();
@@ -283,14 +293,12 @@ async function getParticipants(eventId) {
   });
 }
 
-// This function will set up all your Express routes and middleware
 function setupAppRoutes(app) {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(express.static('static'));
-  app.use(express.static(__dirname)); // To serve createacc.html from root
+  app.use(express.static(__dirname));
 
-  // Public routes (no JWT authentication required)
   app.post('/login', async (req, res) => {
     const { fullname, password } = req.body;
     if (!fullname || !password) {
@@ -311,7 +319,6 @@ function setupAppRoutes(app) {
       res.status(500).json({ success: false, message: 'Internal server error during login' });
     }
   });
-
 
   app.post('/api/create-account', async (req, res) => {
     const { fullname, password, group } = req.body; 
@@ -334,6 +341,7 @@ function setupAppRoutes(app) {
   app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'static', 'index.html'));
   }); 
+
   app.use(authenticateToken);
 
   app.get('/success.html', (req, res) => {
