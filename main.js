@@ -446,7 +446,7 @@ function setupAppRoutes(app) {
   });
 
   app.get('/createacc', (req, res) => {
-    res.sendFile(path.join(__dirname, 'createacc.html'));
+    res.sendFile(path.join(__dirname, 'static', 'admin', 'createacc.html'));
   });
 
   app.get('/admin/index.html', (req, res) => {
