@@ -5,7 +5,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
-
+const admins = ['Julia Reinman','admin']
 require('dotenv').config();
 
 const key = {
@@ -50,8 +50,30 @@ function authenticateToken(req, res, next) {
     }
     req.userId = user.userId;
     req.group = user.group;
-    req.fullname = user.fullname; // NEW: Attach fullname from token to request
+    req.fullname = user.fullname;
     next();
+  });
+}
+function isadmin(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (token == null) {
+    return res.status(401).json({ message: 'Authentication token required' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: 'Invalid or expired token' });
+    }
+    req.userId = user.userId;
+    req.group = user.group;
+    req.fullname = user.fullname;
+
+    if (req.fullname in admins){
+      next();
+    }
+    else{return res.status(403).json({message:'Not an admin'})}
   });
 }
 
@@ -425,13 +447,12 @@ function setupAppRoutes(app) {
     res.json({ success: true, message: 'Logged out successfully' });
   });
 
+
+
+  app.use(isadmin())
+  
   app.get('/api/isadmin', (req,res) => {
-    if (req.fullname=='Julia Reinman'){
-      res.json({admin: true });
-    }
-    else{
-      res.status(403).json({admin:false})
-    }
+    res.json({admin: true})
   });
 } 
 

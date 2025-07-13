@@ -10,37 +10,29 @@
 
     <form action="/createacc.html">
         <button>Loo Konto</button>
-    </form>
+    </form>ˇ
+
 
     <script>
-        async function checkAdminAccess() {
+        async function isadminAccess() {
             const jwtToken = localStorage.getItem('jwtToken');
-
             if (!jwtToken) {
                 window.location.href = '/';
                 return;
             }
-
-            try {
                 const response = await fetch('/api/isadmin', {
                     headers: {
                         'Authorization': `Bearer ${jwtToken}`
                     }
                 });
-
                 const data = await response.json();
 
                 if (!data.admin) {
                     window.location.href = '/success.html';
                 }
-            } catch (error) {
-                console.error('Error checking admin status:', error);
-                localStorage.removeItem('jwtToken');
-                window.location.href = '/';
-            }
         }
 
-        document.addEventListener('DOMContentLoaded', checkAdminAccess);
+        document.addEventListener('DOMContentLoaded', isadminAccess);
     </script>
 </body>
 </html>
