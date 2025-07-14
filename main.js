@@ -13,7 +13,7 @@ const key = {
     type: process.env.GOOGLE_TYPE,
     project_id: process.env.GOOGLE_PROJECT_ID,
     private_key_id: process.env.GOOGLE_PRIVATE_KEY_ID,
-    private_key: process.env.GOOGLE_PRIVATE_KEY ? .replace(/\\n/g, '\n'),
+    private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
     client_email: process.env.GOOGLE_CLIENT_EMAIL,
     client_id: process.env.GOOGLE_CLIENT_ID,
     auth_uri: process.env.GOOGLE_AUTH_URI,
@@ -113,8 +113,8 @@ async function listEvents(groupFilter) {
     });
 
     (result.data.items || []).forEach(event => {
-        const start = event.start ? .dateTime;
-        const end = event.end ? .dateTime;
+        const start = event.start?.dateTime;
+        const end = event.end?.dateTime;
         const desc = event.summary;
         const eventId = event.id;
         const joined = (event.description || '')
@@ -145,6 +145,7 @@ async function listEvents(groupFilter) {
         past: groupFilter ? pastevents[groupFilter] || [] : pastevents
     };
 }
+
 async function createAccount(fullname, password, group) {
     if (!fullname || !password || !group) {
         return { success: false, message: 'Full name, password, and group are required.' };
@@ -159,14 +160,19 @@ async function createAccount(fullname, password, group) {
 
         if (result.affectedRows === 1) {
             return { success: true, message: 'Konto on loodud', userId: result.insertId };
-        } else { return { success: false, message: 'Failed to create account.' }; }
+        } else { 
+            return { success: false, message: 'Failed to create account.' }; 
+        }
 
     } catch (error) {
         console.error('Error creating account:', error.message);
-        if (error.code === 'ER_DUP_ENTRY') { return { success: false, message: 'User with this full name already exists.' }; }
+        if (error.code === 'ER_DUP_ENTRY') { 
+            return { success: false, message: 'User with this full name already exists.' }; 
+        }
         return { success: false, message: 'An internal server error occurred.' };
     }
 }
+
 async function join(eventId, userId) {
     if (typeof userId !== 'number') {
         console.error('Error: userId is not a number in join function!', userId);
@@ -190,18 +196,18 @@ async function join(eventId, userId) {
 
     const db = await mysql.createConnection(DB_CONFIG);
     const [rows] = await db.execute('SELECT grupp FROM users WHERE id = ?', [userId]);
-    const group = rows[0] ? .grupp;
+    const group = rows[0]?.grupp;
     await db.end();
 
-    const max = config[group] ? .max || Infinity;
-    const ofEnabled = config[group] ? .of === true;
+    const max = config[group]?.max || Infinity;
+    const ofEnabled = config[group]?.of === true;
 
     const userFutureJoins = (allEvents.data.items || []).filter(event => {
         const joined = (event.description || '')
             .split(/\s+/)
             .filter(x => /^\d+$/.test(x.trim()))
             .map(Number);
-        const start = event.start ? .dateTime ? new Date(event.start.dateTime) : null;
+        const start = event.start?.dateTime ? new Date(event.start.dateTime) : null;
         return start && joined.includes(userId) && start > new Date();
     }).length;
 
@@ -251,7 +257,7 @@ async function leave(eventId, userId) {
     const res = await calendar.events.get({ calendarId, eventId });
     const event = res.data;
 
-    const start = new Date(event.start ? .dateTime);
+    const start = new Date(event.start?.dateTime);
     const now = new Date();
     const diffMins = (start - now) / 60000;
 
@@ -265,7 +271,6 @@ async function leave(eventId, userId) {
         .map(Number);
 
     const filtered = ids.filter(x => x !== userId);
-    const newDescription = filtered.join('\n');
 
     await calendar.events.patch({
         calendarId,
@@ -324,7 +329,11 @@ function setupAppRoutes(app) {
         try {
             const result = await checkLogin(fullname, password);
             if (result.match) {
-                if (admins.includes(fullname)) { res.json({ success: true, token: result.token, admin: true }); } else { res.json({ success: true, token: result.token }) }
+                if (admins.includes(fullname)) { 
+                    res.json({ success: true, token: result.token, admin: true }); 
+                } else { 
+                    res.json({ success: true, token: result.token }); 
+                }
             } else {
                 res.json({ success: false, message: 'Vale nimi või parool' });
             }
@@ -350,7 +359,7 @@ function setupAppRoutes(app) {
         if (admins.includes(req.fullname)) {
             res.json({ admin: true });
         } else {
-            res.status(403).json({ admin: false })
+            res.status(403).json({ admin: false });
         }
     });
 
@@ -458,4 +467,4 @@ function setupAppRoutes(app) {
     });
 }
 
-module.exports = { sucess: setupAppRoutes };
+module.exports = { success: setupAppRoutes };
