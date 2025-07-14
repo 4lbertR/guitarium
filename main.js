@@ -66,7 +66,7 @@ function requireAdmin(req, res, next) {
 
 async function checkLogin(fullname, password) {
     const db = await mysql.createConnection(DB_CONFIG);
-    const [rows] = await db.execute('SELECT password, grupp, id, fullname FROM users WHERE fullname = ? LIMIT 1', [fullname]);
+    const [rows] = await db.execute('SELECT password, grupp, id, fullname FROM users WHERE fullname =?LIMIT 1', [fullname]);
     await db.end();
     if (rows.length === 0) return { match: false };
 
@@ -135,17 +135,16 @@ async function listEvents(groupFilter) {
         ];
 
         const startTime = new Date(start);
-        const target = startTime > now ? futevents : pastevents;
+        const target = startTime > now?futevents : pastevents;
         if (!target[desc]) target[desc] = [];
         target[desc].push(when);
     });
 
     return {
-        future: groupFilter ? futevents[groupFilter] || [] : futevents,
-        past: groupFilter ? pastevents[groupFilter] || [] : pastevents
+        future: groupFilter?futevents[groupFilter] || [] : futevents,
+        past: groupFilter?pastevents[groupFilter] || [] : pastevents
     };
 }
-
 async function createAccount(fullname, password, group) {
     if (!fullname || !password || !group) {
         return { success: false, message: 'Full name, password, and group are required.' };
@@ -160,19 +159,14 @@ async function createAccount(fullname, password, group) {
 
         if (result.affectedRows === 1) {
             return { success: true, message: 'Konto on loodud', userId: result.insertId };
-        } else { 
-            return { success: false, message: 'Failed to create account.' }; 
-        }
+        } else { return { success: false, message: 'Failed to create account.' }; }
 
     } catch (error) {
         console.error('Error creating account:', error.message);
-        if (error.code === 'ER_DUP_ENTRY') { 
-            return { success: false, message: 'User with this full name already exists.' }; 
-        }
+        if (error.code === 'ER_DUP_ENTRY') { return { success: false, message: 'User with this full name already exists.' }; }
         return { success: false, message: 'An internal server error occurred.' };
     }
 }
-
 async function join(eventId, userId) {
     if (typeof userId !== 'number') {
         console.error('Error: userId is not a number in join function!', userId);
@@ -207,7 +201,7 @@ async function join(eventId, userId) {
             .split(/\s+/)
             .filter(x => /^\d+$/.test(x.trim()))
             .map(Number);
-        const start = event.start?.dateTime ? new Date(event.start.dateTime) : null;
+        const start = event.start?.datetime?new Date(event.start.dateTime) : null;
         return start && joined.includes(userId) && start > new Date();
     }).length;
 
@@ -257,7 +251,7 @@ async function leave(eventId, userId) {
     const res = await calendar.events.get({ calendarId, eventId });
     const event = res.data;
 
-    const start = new Date(event.start?.dateTime);
+    const start = new Date(event.start?.datetime);
     const now = new Date();
     const diffMins = (start - now) / 60000;
 
@@ -271,6 +265,7 @@ async function leave(eventId, userId) {
         .map(Number);
 
     const filtered = ids.filter(x => x !== userId);
+    const newDescription = filtered.join('\n');
 
     await calendar.events.patch({
         calendarId,
@@ -329,11 +324,7 @@ function setupAppRoutes(app) {
         try {
             const result = await checkLogin(fullname, password);
             if (result.match) {
-                if (admins.includes(fullname)) { 
-                    res.json({ success: true, token: result.token, admin: true }); 
-                } else { 
-                    res.json({ success: true, token: result.token }); 
-                }
+                if (admins.includes(fullname)) { res.json({ success: true, token: result.token, admin: true }); } else { res.json({ success: true, token: result.token }) }
             } else {
                 res.json({ success: false, message: 'Vale nimi või parool' });
             }
@@ -359,7 +350,7 @@ function setupAppRoutes(app) {
         if (admins.includes(req.fullname)) {
             res.json({ admin: true });
         } else {
-            res.status(403).json({ admin: false });
+            res.status(403).json({ admin: false })
         }
     });
 
@@ -467,4 +458,4 @@ function setupAppRoutes(app) {
     });
 }
 
-module.exports = { success: setupAppRoutes };
+module.exports = { sucess: setupAppRoutes };
