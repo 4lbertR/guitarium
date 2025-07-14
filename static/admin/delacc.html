@@ -12,10 +12,9 @@
         <button>Loo Konto</button>
     </form>
 
-    <script>
-        const jwtToken = localStorage.getItem('jwtToken');
+   <script>
         async function checkAdminAccess() {
-            v
+            const jwtToken = localStorage.getItem('jwtToken');
 
             if (!jwtToken) {
                 window.location.href = '/';
@@ -28,9 +27,7 @@
                         'Authorization': `Bearer ${jwtToken}`
                     }
                 });
-
                 const data = await response.json();
-
                 if (!data.admin) {
                     window.location.href = '/success.html';
                 }
