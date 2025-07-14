@@ -151,7 +151,7 @@ async function createAccount(fullname, password, group) {
     );
     await db.end();
 
-    if (result.affectedRows === 1) {return { success: true, message: 'Account created successfully.', userId: result.insertId };
+    if (result.affectedRows === 1) {return { success: true, message: 'Konto on loodud', userId: result.insertId };
     } else {return { success: false, message: 'Failed to create account.' };}
 
   } catch (error) {
