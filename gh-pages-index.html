@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guitarium - Group Lesson Booking System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header .subtitle {
+            font-size: 1.2rem;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+
+        .content {
+            background: white;
+            border-radius: 12px;
+            padding: 3rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .section {
+            margin-bottom: 2.5rem;
+        }
+
+        .section h2 {
+            color: #5a67d8;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            border-bottom: 3px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+
+        .section p {
+            margin-bottom: 1rem;
+            color: #4a5568;
+            font-size: 1rem;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .feature {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid #5a67d8;
+        }
+
+        .feature h3 {
+            color: #2d3748;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature p {
+            color: #4a5568;
+            font-size: 0.9rem;
+        }
+
+        .links {
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            display: inline-block;
+            background: #5a67d8;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 0 1rem;
+            transition: background 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #4c51bf;
+        }
+
+        .btn.secondary {
+            background: #68d391;
+        }
+
+        .btn.secondary:hover {
+            background: #48bb78;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            opacity: 0.8;
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 2rem;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🎸 Guitarium</h1>
+            <p class="subtitle">Open Source Group Lesson Booking System</p>
+        </header>
+
+        <main class="content">
+            <section class="section">
+                <h2>About Guitarium</h2>
+                <p>
+                    Guitarium is an open source group lesson booking system designed for managing lesson bookings 
+                    with multiple groups. Perfect for music schools, sports lessons, or any educational institution 
+                    that offers group-based learning experiences.
+                </p>
+                <p>
+                    Originally developed for guitarium.ee, this system seamlessly integrates with Google Calendar 
+                    to provide a complete lesson management solution.
+                </p>
+            </section>
+
+            <section class="section">
+                <h2>Key Features</h2>
+                <div class="features">
+                    <div class="feature">
+                        <h3>📅 Google Calendar Integration</h3>
+                        <p>Lessons are managed directly in Google Calendar with automatic synchronization and participant tracking.</p>
+                    </div>
+                    <div class="feature">
+                        <h3>👥 Unlimited Students & Groups</h3>
+                        <p>Support for unlimited number of students and groups, making it scalable for institutions of any size.</p>
+                    </div>
+                    <div class="feature">
+                        <h3>🔐 Secure Authentication</h3>
+                        <p>JWT-based authentication system with role-based access control for students and administrators.</p>
+                    </div>
+                    <div class="feature">
+                        <h3>🎯 Group-Based Learning</h3>
+                        <p>Specifically designed for group lessons where multiple students participate in the same session.</p>
+                    </div>
+                    <div class="feature">
+                        <h3>📊 Administrative Interface</h3>
+                        <p>Comprehensive admin panel for managing users, groups, and lesson schedules.</p>
+                    </div>
+                    <div class="feature">
+                        <h3>🌐 Web-Based Platform</h3>
+                        <p>Built with Node.js and Express, providing a modern web-based interface accessible from anywhere.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2>How It Works</h2>
+                <p>
+                    The system works by integrating with Google Calendar where lesson titles represent the group 
+                    name and the description field is used for tracking participants. This approach provides a 
+                    familiar interface for administrators while maintaining detailed booking records.
+                </p>
+                <p>
+                    Students can log in to view their scheduled lessons, while administrators have full control 
+                    over creating, modifying, and managing all aspects of the lesson booking system.
+                </p>
+            </section>
+
+            <section class="section">
+                <h2>Technology Stack</h2>
+                <p>
+                    Guitarium is built using modern web technologies including Node.js, Express.js, MySQL, 
+                    and integrates with Google APIs for calendar functionality. The system uses JWT for 
+                    secure authentication and bcrypt for password hashing.
+                </p>
+            </section>
+
+            <div class="links">
+                <a href="https://github.com/4lbertR/guitarium" class="btn">View Source Code</a>
+                <a href="https://github.com/4lbertR/guitarium/issues" class="btn secondary">Report Issues</a>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 Guitarium Project - Open Source Group Lesson Booking System</p>
+            <p>Made with ❤️ for educational institutions worldwide</p>
+        </footer>
+    </div>
+</body>
+</html>
