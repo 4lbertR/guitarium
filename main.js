@@ -449,7 +449,10 @@ function setupAppRoutes(app) {
             res.status(400).json(result);
         }
     });
-
+    app.post('/api/delete-account', async(req, res) => {
+        const { userId } = req.body;
+        
+    });
     app.get('/admin/createacc', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'createacc.html'));
     });
@@ -457,6 +460,10 @@ function setupAppRoutes(app) {
     app.get('/admin/index.html', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'index.html'));
     });
+    app.get('/admin/delacc.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'static', 'admin', 'index.html'));
+    });
+
 }
 
 module.exports = { success: setupAppRoutes };
