@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guitarium - Group Lesson Booking System</title>
+    <meta name="description" content="A professional group lesson booking system for music schools and educational institutions.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #3b82f6;
+            --accent-color: #1d4ed8;
+            --text-color: #1f2937;
+            --text-light: #6b7280;
+            --bg-color: #ffffff;
+            --bg-light: #f9fafb;
+            --border-color: #e5e7eb;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero h1 .emoji {
+            font-size: 4rem;
+            margin-right: 0.5rem;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .card {
+            background: var(--bg-color);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+        }
+
+        .card h2 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+        }
+
+        .card p {
+            color: var(--text-light);
+            margin-bottom: 1rem;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .feature {
+            background: var(--bg-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .feature:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .feature h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .feature p {
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+        .tech-stack {
+            background: var(--bg-light);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .tech-stack h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+        }
+
+        .tech-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .tech-badge {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-color);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero h1 .emoji {
+                font-size: 3rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1><span class="emoji">🎸</span>Guitarium</h1>
+            <p>A professional group lesson booking system designed for music schools and educational institutions. Streamline your lesson management with our modern, user-friendly platform.</p>
+        </div>
+
+        <div class="card">
+            <h2>About Guitarium</h2>
+            <p>Guitarium is a comprehensive booking and management system specifically designed for music schools offering group lessons. Built with modern web technologies, it provides an intuitive interface for both administrators and students to manage lesson bookings, track attendance, and handle user accounts efficiently.</p>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <h3>🗓️ Lesson Management</h3>
+                <p>Easy scheduling and booking system for group music lessons with real-time availability tracking.</p>
+            </div>
+
+            <div class="feature">
+                <h3>👥 User Management</h3>
+                <p>Comprehensive user account system with role-based access for administrators and students.</p>
+            </div>
+
+            <div class="feature">
+                <h3>🔐 Secure Authentication</h3>
+                <p>JWT-based authentication system with secure password handling and session management.</p>
+            </div>
+
+            <div class="feature">
+                <h3>📱 Responsive Design</h3>
+                <p>Mobile-friendly interface that works seamlessly across all devices and screen sizes.</p>
+            </div>
+
+            <div class="feature">
+                <h3>⚡ Real-time Updates</h3>
+                <p>Live booking updates and notifications to keep everyone informed about lesson changes.</p>
+            </div>
+
+            <div class="feature">
+                <h3>📊 Admin Dashboard</h3>
+                <p>Powerful admin interface for managing users, lessons, and system configuration.</p>
+            </div>
+        </div>
+
+        <div class="tech-stack">
+            <h3>Technology Stack</h3>
+            <div class="tech-list">
+                <span class="tech-badge">Node.js</span>
+                <span class="tech-badge">Express.js</span>
+                <span class="tech-badge">MySQL</span>
+                <span class="tech-badge">JWT</span>
+                <span class="tech-badge">bcrypt</span>
+                <span class="tech-badge">HTML5</span>
+                <span class="tech-badge">CSS3</span>
+                <span class="tech-badge">JavaScript</span>
+                <span class="tech-badge">Docker</span>
+                <span class="tech-badge">CapRover</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>How It Works</h2>
+            <p><strong>For Students:</strong> Log in with your credentials to view available group lessons, book sessions that fit your schedule, and manage your lesson history.</p>
+            <p><strong>For Administrators:</strong> Access the admin dashboard to create user accounts, manage lesson schedules, track attendance, and configure system settings.</p>
+            <p><strong>For Schools:</strong> Deploy the system using Docker and CapRover for easy hosting and management of your music lesson booking platform.</p>
+        </div>
+
+        <div class="cta-buttons">
+            <a href="https://github.com/4lbertR/guitarium" class="btn btn-primary">
+                View Source Code
+            </a>
+            <a href="https://github.com/4lbertR/guitarium/issues" class="btn btn-secondary">
+                Report Issues
+            </a>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2025 Guitarium. Open source music lesson booking system.</p>
+        </div>
+    </div>
+</body>
+</html>
