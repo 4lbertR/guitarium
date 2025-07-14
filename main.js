@@ -449,9 +449,12 @@ function setupAppRoutes(app) {
             res.status(400).json(result);
         }
     });
-    app.post('/api/delete-account', async(req, res) => {
+    app.post('/api/delete-account-fetch', async(req, res) => {
         const { userId } = req.body;
-        
+        const db = await mysql.createConnection(DB_CONFIG);
+        const [rows] = await db.execute('SELECT users FROM users');
+        const group = rows[0]?.grupp;
+        res.json({ success: true, group: group });
     });
     app.get('/admin/createacc', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'createacc.html'));
