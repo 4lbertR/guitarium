@@ -29,20 +29,29 @@
         document.addEventListener('DOMContentLoaded', checkAdminAccess);
     </script>
     <script>
-        const groups = await fetch('/api/getgroups', {
-              headers: {
-                'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT
-              }
-            })
-        const x = ['group 1', 'group 2', 'group 3', 'group 4'];
-        const dropdown = document.getElementById('groups');
-        dropdown.innerHTML = '';
-        for (let i = 0; i < x.length; i++) {
-            const option = document.createElement('option');
-            option.value = i;
-            option.textContent = x[i];
-            dropdown.appendChild(option);
+        async function loadGroups() {
+            const jwtToken = localStorage.getItem('jwtToken');
+                const response = await fetch('/api/getgroups', {
+                    headers: {
+                        'Authorization': `Bearer ${jwtToken}`
+                    }
+                });
+                const groups = await response.json();
+                const dropdown = document.getElementById('groups');
+                dropdown.innerHTML = '';
+                
+                for (let i = 0; i < groups.length; i++) {
+                    const option = document.createElement('option');
+                    option.value = groups[i];
+                    option.textContent = groups[i];
+                    dropdown.appendChild(option);
+                }
         }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAdminAccess();
+            loadGroups();
+        });
     </script>
 </body>
 </html>
