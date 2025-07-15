@@ -477,11 +477,48 @@ function setupAppRoutes(app) {
             res.json({ success: true, message: 'Konto on kustutatud' });
         }
     });
-    
-    
-    
-    
-    
+    app.post('/api/create-lesson', async(req, res) => {
+        const { group, date, startTime, endTime, repeatOption } = req.body;
+        
+        const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
+        const authClient = await auth.getClient();
+        const calendar = google.calendar({ version: 'v3', auth: authClient });
+
+        const event = {
+            summary: group,
+            start: { 
+                dateTime: `${date}T${startTime}:00`,
+                timeZone: 'Europe/Tallinn'
+            },
+            end: { 
+                dateTime: `${date}T${endTime}:00`,
+                timeZone: 'Europe/Tallinn'
+            },
+        };
+        if (repeatOption && repeatOption !== 'none') {
+            const recurrenceRules = {
+                'daily': 'RRULE:FREQ=DAILY',
+                'weekly': 'RRULE:FREQ=WEEKLY',
+                'monthly': 'RRULE:FREQ=MONTHLY'
+            };
+            
+            if (recurrenceRules[repeatOption]) {
+                event.recurrence = [recurrenceRules[repeatOption]];
+            }
+        }
+
+        // Create the event in Google Calendar
+        const result = await calendar.events.insert({
+            calendarId,
+            requestBody: event
+        });
+
+        res.json({ 
+            success: true, 
+            message: `Tund grupi "${group}" jaoks on edukalt loodud`,
+            eventId: result.data.id
+        });
+    });
     app.get('/admin/createacc', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'createacc.html'));
     });

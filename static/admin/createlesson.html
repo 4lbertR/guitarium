@@ -109,7 +109,32 @@
             loadGroups();
         });
 
-        
+        async function createLesson() {
+            const jwtToken = localStorage.getItem('jwtToken');
+            const group = document.getElementById('groups').value;
+            const date = document.getElementById('lessonDate').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            const repeatOption = document.getElementById('repeatOption').value;
+
+            if (!group || !date || !startTime || !endTime) {
+                alert('Palun täida kõik väljad.');
+                return;
+            }
+
+            const response = await fetch('/api/create-lesson', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${jwtToken}`
+                },
+                body: JSON.stringify({ group, date, startTime, endTime, repeatOption })
+            });
+
+            const result = await response.json();
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = result.message;
+        }
 
     </script>
 </body>
