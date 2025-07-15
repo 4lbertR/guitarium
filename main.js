@@ -456,6 +456,21 @@ function setupAppRoutes(app) {
         const group = rows[0]?.grupp;
         res.json({ success: true, group: group });
     });
+    app.post('/api/deletegroup', async(req, res) => {
+        const { group } = req.body;
+
+        const db = await mysql.createConnection(DB_CONFIG);
+        const [result] = await db.execute('DELETE FROM users WHERE group = ?', [group]);
+        await db.end();
+        if (result.affectedRows >= 1) {
+            res.json({ success: true, message: 'Kontod, grupp on kustutatud' });
+        }
+    });
+    
+    
+    
+    
+    
     app.get('/admin/createacc', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'createacc.html'));
     });
@@ -477,6 +492,9 @@ function setupAppRoutes(app) {
         res.json(groups);
     });
 
+    app.get('/admin/delgroup.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'static', 'admin', 'delgroup.html'));
+    });
 }
 
 module.exports = { success: setupAppRoutes };
