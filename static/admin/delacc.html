@@ -40,7 +40,7 @@
                 const users = await response.json();
                 const dropdown = document.getElementById('users');
                 dropdown.innerHTML = '';
-                
+                users.sort((a, b) => a.localeCompare(b));
                 for (let i = 0; i < users.length; i++) {
                     const option = document.createElement('option');
                     option.value = users[i];
@@ -74,7 +74,7 @@
 
                 if (response.ok) {
                     document.getElementById('message').textContent = `Kasutaja ${user} on edukalt kustutatud.`;
-                    loadusers(); // Refresh the user list
+                    loadusers();
                 } else {
                     const errorData = await response.json();
                     document.getElementById('message').textContent = `Viga: ${errorData.message}`;
