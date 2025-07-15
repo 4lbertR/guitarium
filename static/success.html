@@ -260,8 +260,7 @@
                     hasJoined = !hasJoined;
                     details.classList.toggle('joined');
                     btn.textContent = hasJoined ? 'Loobu' : 'Liitu';
-                    howmany += hasJoined ? 1 : -1;
-                    const displaymax = await displaymaxResponse.json();
+                    howmany += hasJoined ? 1 : -1;;
                     if(displaymax.ic){
                       document.getElementById('fixedInfo').innerHTML = `Sinu grupp on ${group}<br>Oled liitunud ${howmany}/${displaymax.max} tunniga`;
                     } else {
