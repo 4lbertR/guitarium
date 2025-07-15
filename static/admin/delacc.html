@@ -4,41 +4,83 @@
     <link rel="stylesheet" href="../styles.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel</title>
+    <title>Create Account</title>
+
 </head>
 <body>
-
-    <form action="/createacc.html">
-        <button>Loo Konto</button>
-    </form>
-
-   <script>
+    <header>
+        
+    </header>
+    <div class="container">
+        <select id="users"></select>
+        <button id="deleteGroupButton">Kustuta Kasutaja</button>
+        <div id="message"></div>
+    </div>
+    
+    <script>
         async function checkAdminAccess() {
             const jwtToken = localStorage.getItem('jwtToken');
+            if (!jwtToken) {window.location.href = '/';return;}
+            try {const response = await fetch('/api/isadmin', {headers: {'Authorization': `Bearer ${jwtToken}`}});
+                const data = await response.json();
+                if (!data.admin) {window.location.href = '/success.html';}
+            } catch (error) {localStorage.removeItem('jwtToken');window.location.href = '/';}
+        }
+        document.addEventListener('DOMContentLoaded', checkAdminAccess);
+    </script>
 
-            if (!jwtToken) {
-                window.location.href = '/';
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/isadmin', {
+    <script>
+        async function loadusers() {
+            const jwtToken = localStorage.getItem('jwtToken');                                                      
+                const response = await fetch('/api/getusers', {
                     headers: {
                         'Authorization': `Bearer ${jwtToken}`
                     }
                 });
-                const data = await response.json();
-                if (!data.admin) {
-                    window.location.href = '/success.html';
+                const users = await response.json();
+                const dropdown = document.getElementById('users');
+                dropdown.innerHTML = '';
+                
+                for (let i = 0; i < users.length; i++) {
+                    const option = document.createElement('option');
+                    option.value = users[i];
+                    option.textContent = users[i];
+                    dropdown.appendChild(option);
                 }
-            } catch (error) {
-                console.error('Error checking admin status:', error);
-                localStorage.removeItem('jwtToken');
-                window.location.href = '/';
-            }
         }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAdminAccess();
+            loadusers();
+        });
 
-        document.addEventListener('DOMContentLoaded', checkAdminAccess);
+        document.getElementById('deleteGroupButton').addEventListener('click', async function() {
+            const jwtToken = localStorage.getItem('jwtToken');
+            const group = document.getElementById('users').value;
+            
+
+            if (!confirm(`Kas oled kindel, et tahad kustutada kasutaja "${group}" ja kõik selle kasutajad?`)) {
+                return; 
+            }
+            
+            const response = await fetch('/api/delete-account-fetch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${jwtToken}`
+                },
+                body: JSON.stringify({ group })
+                });
+
+                if (response.ok) {
+                    document.getElementById('message').textContent = `Grupp ${group} on edukalt kustutatud.`;
+                    loadusers(); // Refresh the group list
+                } else {
+                    const errorData = await response.json();
+                    document.getElementById('message').textContent = `Viga: ${errorData.message}`;
+                }
+        });
+
     </script>
 </body>
 </html>

@@ -449,13 +449,7 @@ function setupAppRoutes(app) {
             res.status(400).json(result);
         }
     }); 
-    app.post('/api/delete-account-fetch', async(req, res) => {
-        const { userId } = req.body;
-        const db = await mysql.createConnection(DB_CONFIG);
-        const [rows] = await db.execute('SELECT users FROM users');
-        const group = rows[0]?.grupp;
-        res.json({ success: true, group: group });
-    });
+
     app.post('/api/deletegroup', async(req, res) => {
         const { group } = req.body;
 
@@ -464,6 +458,23 @@ function setupAppRoutes(app) {
         await db.end();
         if (result.affectedRows >= 1) {
             res.json({ success: true, message: 'Kontod, grupp on kustutatud' });
+        }
+    });
+        app.post('/api/getusers', async(req, res) => {
+        const { userId } = req.body;
+        const db = await mysql.createConnection(DB_CONFIG);
+        const [rows] = await db.execute('SELECT users FROM users');
+        const group = rows[0]?.grupp;
+        res.json({ success: true, group: group });
+    });
+    app.post('/api/delete-account', async(req, res) => {
+        const { user } = req.body;
+
+        const db = await mysql.createConnection(DB_CONFIG);
+        const [result] = await db.execute('DELETE FROM users WHERE fullname = ?', [user]);
+        await db.end();
+        if (result.affectedRows >= 1) {
+            res.json({ success: true, message: 'Konto on kustutatud' });
         }
     });
     
