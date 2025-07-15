@@ -460,12 +460,12 @@ function setupAppRoutes(app) {
             res.json({ success: true, message: 'Kontod, grupp on kustutatud' });
         }
     });
-        app.post('/api/getusers', async(req, res) => {
-        const { userId } = req.body;
+    app.get('/api/getusers', async(req, res) => {
         const db = await mysql.createConnection(DB_CONFIG);
-        const [rows] = await db.execute('SELECT users FROM users');
-        const group = rows[0]?.grupp;
-        res.json({ success: true, group: group });
+        const [rows] = await db.execute('SELECT fullname FROM users');
+        await db.end();
+        const users = rows.map(row => row.fullname);
+        res.json(users);
     });
     app.post('/api/delete-account', async(req, res) => {
         const { user } = req.body;
@@ -490,7 +490,7 @@ function setupAppRoutes(app) {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'index.html'));
     });
     app.get('/admin/delacc.html', (req, res) => {
-        res.sendFile(path.join(__dirname, 'static', 'admin', 'index.html'));
+        res.sendFile(path.join(__dirname, 'static', 'admin', 'delacc.html'));
     });
     app.get('/admin/createlesson.html', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'createlesson.html'));
