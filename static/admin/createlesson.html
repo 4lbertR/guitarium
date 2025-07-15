@@ -33,10 +33,10 @@
         const dropdown = document.getElementById('groups');
         dropdown.innerHTML = '';
         for (let i = 0; i < x.length; i++) {
-        const group = document.createElement('group');
-        group.value = i;
-        group.textContent = x[i];
-        dropdown.appendChild(group);
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = x[i];
+            dropdown.appendChild(option);
         }
     </script>
 </body>
