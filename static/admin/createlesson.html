@@ -13,15 +13,8 @@
     </header>
     <div class="container">
         <h2>Lisa uus kasutaja</h2>
-        <div class="dropdown">
-            <button onclick="myFunction()" class="dropbtn">Dropdown</button>
-            <div id="myDropdown" class="dropdown-content">
-                <a href="#">Link 1</a>
-                <a href="#">Link 2</a>
-                <a href="#">Link 3</a>
-            </div>
-            </div>
-        <form id="createAccountForm">
+        <select" id="groups"></select>
+        <form id="createAccountForm">   
             <div class="form-group">
                 <label for="fullname">Ees- ja perekonnanimi:</label>
                 <input type="text" id="fullname" required>
@@ -38,78 +31,29 @@
         </form>
         <div id="message"></div>
     </div>
-
+    
     <script>
+        //ADMIN CHECK
         async function checkAdminAccess() {
             const jwtToken = localStorage.getItem('jwtToken');
-
-            if (!jwtToken) {
-                window.location.href = '/';
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/isadmin', {
-                    headers: {
-                        'Authorization': `Bearer ${jwtToken}`
-                    }
-                });
-
+            if (!jwtToken) {window.location.href = '/';return;}
+            try {const response = await fetch('/api/isadmin', {headers: {'Authorization': `Bearer ${jwtToken}`}});
                 const data = await response.json();
-
-                if (!data.admin) {
-                    window.location.href = '/success.html';
-                }
-            } catch (error) {
-                console.error('Error checking admin status:', error);
-                localStorage.removeItem('jwtToken');
-                window.location.href = '/';
-            }
+                if (!data.admin) {window.location.href = '/success.html';}
+            } catch (error) {localStorage.removeItem('jwtToken');window.location.href = '/';}
         }
-
         document.addEventListener('DOMContentLoaded', checkAdminAccess);
-
-        document.getElementById('createAccountForm').addEventListener('submit', async (event) => {
-            event.preventDefault();
-
-            const fullname = document.getElementById('fullname').value;
-            const password = document.getElementById('password').value;
-            const group = document.getElementById('group').value;
-            const messageDiv = document.getElementById('message');
-
-            messageDiv.style.display = 'none';
-            messageDiv.className = '';
-
-            try {
-                const response = await fetch('/api/create-account', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('jwtToken')}` // Ensure token is sent for admin-protected endpoint
-                    },
-                    body: JSON.stringify({ fullname, password, group })
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    messageDiv.textContent = result.message;
-                    messageDiv.classList.add('success');
-                    document.getElementById('fullname').value = '';
-                    document.getElementById('password').value = '';
-                    document.getElementById('group').value = '';
-                } else {
-                    messageDiv.textContent = result.message || 'An unknown error occurred.';
-                    messageDiv.classList.add('error');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                messageDiv.textContent = 'Network error or server unreachable.';
-                messageDiv.classList.add('error');
-            } finally {
-                messageDiv.style.display = 'block';
-            }
-        });
+    </script>
+    <script>
+        const x = ['group 1', 'group 2', 'group 3', 'group 4'];
+        const dropdown = document.getElementById('myDropdown');
+        dropdown.innerHTML = '';
+        for (let i = 0; i < x.length; i++) {
+        const group = document.createElement('group');
+        group.value = i;
+        group.textContent = x[i];
+        dropdown.appendChild(group);
+        }
     </script>
 </body>
 </html>
