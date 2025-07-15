@@ -59,6 +59,7 @@
                     option.textContent = users[i];
                     dropdown.appendChild(option);
                 }
+        }
         
         document.addEventListener('DOMContentLoaded', function() {
             checkAdminAccess();
@@ -79,6 +80,22 @@
                 return;
             }
 
+            // First get the user ID
+            const userResponse = await fetch('/api/getuser', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${jwtToken}`
+                },
+                body: JSON.stringify({ user })
+            });
+            const userData = await userResponse.json();
+            
+            if (!userData.success) {
+                document.getElementById('message').textContent = 'Kasutajat ei leitud';
+                return;
+            }
+
             try {
                 const response = await fetch('/api/edit-account', {
                     method: 'POST',
@@ -86,11 +103,14 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${jwtToken}`
                     },
-                    body: JSON.stringify({ user, fullname, password, group })
+                    body: JSON.stringify({ userId: userData.userId, fullname, password, group })
                 });
 
                 const data = await response.json();
                 document.getElementById('message').textContent = data.message || 'Kasutaja andmed muudetud.';
+                if (data.success) {
+                    loadusers(); // Refresh the user list
+                }
             } catch (error) {
                 console.error('Error changing user data:', error);
                 document.getElementById('message').textContent = 'Viga kasutaja andmete muutmisel.';
@@ -100,7 +120,7 @@
             const jwtToken = localStorage.getItem('jwtToken');
             const user = document.getElementById('users').value;
 
-                const response = await fetch('/api/getusers', {
+                const response = await fetch('/api/getuser', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -117,7 +137,6 @@
                 } else {
                     document.getElementById('message').textContent = data.message
                 }
-            
         }
                 document.getElementById('deleteGroupButton').addEventListener('click', async function() {
             const jwtToken = localStorage.getItem('jwtToken');
@@ -145,7 +164,6 @@
                     document.getElementById('message').textContent = `Viga: ${errorData.message}`;
                 }
         });
-    }
     </script>
 </body>
 </html>
