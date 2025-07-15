@@ -185,10 +185,8 @@ input[type="time"]:focus {
     outline: none;
     border-color: #7c1f59;
     box-shadow: 0 0 0 3px rgba(124, 31, 89, 0.2);
-}
-input {
-  color: #fff;
-}
+} 
+
 /* Date Input Styles */
 input[type="date"] {
     width: 100%;
