@@ -59,7 +59,15 @@
                     option.textContent = users[i];
                     dropdown.appendChild(option);
                 }
-        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAdminAccess();
+            loadusers();
+        });
+
+        document.getElementById('users').addEventListener('change', fetchUserData);
+        document.getElementById('changedatabutton').addEventListener('click', changeUserData);
+
         async function changeUserData() {
             const jwtToken = localStorage.getItem('jwtToken');
             const user = document.getElementById('users').value;
@@ -72,7 +80,7 @@
             }
 
             try {
-                const response = await fetch('/api/edituser', {
+                const response = await fetch('/api/edit-account', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -137,6 +145,7 @@
                     document.getElementById('message').textContent = `Viga: ${errorData.message}`;
                 }
         });
+    }
     </script>
 </body>
 </html>

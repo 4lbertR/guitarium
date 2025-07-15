@@ -467,6 +467,23 @@ function setupAppRoutes(app) {
         const users = rows.map(row => row.fullname);
         res.json(users);
     });
+    
+    app.post('/api/getuser', async(req, res) => {
+        const { user } = req.body;
+        const db = await mysql.createConnection(DB_CONFIG);
+        const [rows] = await db.execute('SELECT id, fullname, grupp FROM users WHERE fullname = ?', [user]);
+        await db.end();
+        if (rows.length > 0) {
+            res.json({ 
+                success: true, 
+                userId: rows[0].id,
+                fullname: rows[0].fullname, 
+                group: rows[0].grupp 
+            });
+        } else {
+            res.json({ success: false, message: 'User not found' });
+        }
+    });
     app.post('/api/delete-account', async(req, res) => {
         const { user } = req.body;
 
@@ -636,8 +653,7 @@ function setupAppRoutes(app) {
             console.error('Error updating account:', error);
             res.status(500).json({ success: false, message: 'Internal server error' });
         }
-
-
+    });
 
     app.get('/admin/createacc', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'createacc.html'));
@@ -670,8 +686,6 @@ function setupAppRoutes(app) {
     app.get('/admin/editacc.html', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'editacc.html'));
     });
-});
-
 }
 
 module.exports = { success: setupAppRoutes };
