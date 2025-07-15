@@ -46,7 +46,22 @@
                     dropdown.appendChild(option);
                 }
         }
-
+        document.getElementById('users').addEventListener('change', async function() {
+            const user = this.value;
+            if (user) {
+                try {
+                    const response = await fetch(`/api/getuserlessons?user=${user}`, {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+                        }
+                    });
+                    const lessons = await response.json();
+                    console.log(lessons); // Display lessons in console or handle as needed
+                } catch (error) {
+                    console.error('Error fetching user lessons:', error);
+                }
+            }
+        });
 
         async function registerForLesson() {
             const jwtToken = localStorage.getItem('jwtToken');

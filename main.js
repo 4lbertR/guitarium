@@ -696,6 +696,37 @@ function setupAppRoutes(app) {
             res.status(500).json({ success: false, message: 'Internal server error' });
         }
     });
+    app.post('/api/getuserlessons', async(req, res) => {
+        const { userId } = req.body;
+        if (!userId) {
+            return res.status(400).json({ success: false, message: 'User ID is required.' });
+        }
+        try {
+            const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
+            const authClient = await auth.getClient();  
+            const calendar = google.calendar({ version: 'v3', auth: authClient });
+            const allEvents = await calendar.events.list({
+                calendarId,
+                maxResults: 100,
+                singleEvents: true,
+                orderBy: 'startTime'
+            });
+            const userFutureJoins = (allEvents.data.items || []).filter(event => {
+                const joined = (event.description || '')
+                    .split(/\s+/)
+                    .filter(x => /^\d+$/.test(x.trim()))
+                    .map(Number);
+                const start = event.start?.dateTime ? new Date(event.start.dateTime) : null
+                return start && joined.includes(userId) && start > new Date();
+            }).map(event => {
+                return {
+                    id: event.id,
+                    group: event.summary,
+                    start: event.start?.dateTime,
+                    end: event.end?.dateTime
+                };
+            });
+            res.json(userFutureJoins);
     
 
     app.get('/admin/createacc', (req, res) => {
