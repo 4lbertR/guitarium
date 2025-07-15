@@ -109,6 +109,8 @@
             loadGroups();
         });
 
+        document.getElementById('deleteGroupButton').addEventListener('click', createLesson);
+
         async function createLesson() {
             const jwtToken = localStorage.getItem('jwtToken');
             const group = document.getElementById('groups').value;
