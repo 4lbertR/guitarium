@@ -189,6 +189,7 @@ input[type="time"]:focus {
 
 /* Date Input Styles */
 input[type="date"] {
+    color: #222;
     width: 100%;
     max-width: 200px;
     padding: 12px 16px;
