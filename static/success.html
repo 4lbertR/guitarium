@@ -181,11 +181,20 @@
         const text = config[group]?.time || '';
         console.log('Fixed time text:', text); // DEBUG: Log the 'time' value
 
-        // MODIFIED: Removed the "püsiaeg" part, only keeping "Oled registreerunud gruppi [group]"
-        document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
+        const displaymax = await fetch('/api/displaymax', {
+          headers: {
+            'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT
+          }
+          
+        });
+        let howmany = 0;
+        howmany = future.filter(e => e[6].includes(userId)).length;
+        if(displaymax.ic){
+           document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}\nOled liitunud ${howmany}/${displaymax.max} tunniga`;
+        } else {
+           document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
+          }
         
-        const maxLimit = config[group]?.max || 6;
-
         // Fetch events using the JWT token
         const eventsResponse = await fetch('/api/events', {
           headers: {
@@ -196,10 +205,9 @@
         const future = data.future || [];
         const past = data.past || [];
 
-        let howmany = 0;
-        howmany = future.filter(e => e[6].includes(userId)).length;
 
-        //document.getElementById('joinedCount').textContent = `Liitunud ${howmany}/${maxLimit} tunniga`;
+
+        //
         document.getElementById('myText').textContent = `Tulemas: ${future.length}, Möödunud: ${past.length}`;
 
         const render = (target, list, isFuture = false) => {

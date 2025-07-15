@@ -449,14 +449,13 @@ function setupAppRoutes(app) {
     app.post('/api/displaymax', async(req, res) => {
 
         const db = await mysql.createConnection(DB_CONFIG);
-        const [rows] = await db.execute('SELECT grupp FROM users WHERE id = ?', [userId]
+        const [rows] = await db.execute('SELECT grupp FROM users WHERE id = ?', [userId])
         const group = rows[0]?.grupp;
         await db.end();
 
-        if group in config){
+        if(group in config) {
             res.json({ ic: true, max: config[group].max });
-        }
-        else{
+        } else {
             res.json({ ic: false, max: 0 });
         }
     });
