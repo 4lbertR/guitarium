@@ -749,7 +749,7 @@ function setupAppRoutes(app) {
         await db.end();
         const groups = rows.map(row => row.grupp);
         res.json(groups);
-    });
+    }); 
 
     app.get('/admin/delgroup.html', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'delgroup.html'));
