@@ -679,6 +679,25 @@ function setupAppRoutes(app) {
         }
     });
 
+    app.post('/api/register-for-lesson', async(req, res) => {
+        const { userId, eventId } = req.body;
+        if (!userId || !eventId) {
+            return res.status(400).json({ success: false, message: 'User ID and event ID are required.' });
+        }
+        try {
+            const joined = await join(eventId, userId);
+            if (joined.success) {
+                res.json({ success: true, message: '' });
+            } else {
+                res.status(400).json({ success: false, message: 'Registreerimine ebaõnnestus' });
+            }
+        } catch (error) {
+            console.error('Error registering for lesson:', error);
+            res.status(500).json({ success: false, message: 'Internal server error' });
+        }
+    });
+    
+
     app.get('/admin/createacc', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'createacc.html'));
     });
@@ -709,6 +728,9 @@ function setupAppRoutes(app) {
     });
     app.get('/admin/editacc.html', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'editacc.html'));
+    });
+    app.get('/admin/registerforlesson.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'static', 'admin', 'registerforlesson.html'));
     });
 }
 

@@ -39,12 +39,12 @@
                 if (!data.admin) {window.location.href = '/success.html';}
             } catch (error) {localStorage.removeItem('jwtToken');window.location.href = '/';}
         }
-        document.addEventListener('DOMContentLoaded', checkAdminAccess);
     </script>
     <script>
         async function loadusers() {
-            const jwtToken = localStorage.getItem('jwtToken');                                                      
-                const response = await fetch('/api/getusers', {
+            const jwtToken = localStorage.getItem('jwtToken');
+            if (!jwtToken) {window.location.href = '/';return;}
+            const response = await fetch('/api/getusers', {
                     headers: {
                         'Authorization': `Bearer ${jwtToken}`
                     }

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/admin/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account</title>
+
+</head>
+<body>
+      <header>
+            <button onclick="window.location.href='/admin/index.html'">Tagasi</button>
+        </header>
+    <div class="container">
+        <select id="users"></select>
+    </div>
+    
+    <script>
+        async function checkAdminAccess() {
+            const jwtToken = localStorage.getItem('jwtToken');
+            if (!jwtToken) {window.location.href = '/';return;}
+            try {const response = await fetch('/api/isadmin', {headers: {'Authorization': `Bearer ${jwtToken}`}});
+                const data = await response.json();
+                if (!data.admin) {window.location.href = '/success.html';}
+            } catch (error) {localStorage.removeItem('jwtToken');window.location.href = '/';}
+        }
+        document.addEventListener('DOMContentLoaded', checkAdminAccess);
+    </script>
+    <script>
+        async function loadusers() {
+            const jwtToken = localStorage.getItem('jwtToken');
+            if (!jwtToken) {window.location.href = '/';return;}
+            const response = await fetch('/api/getusers', {
+                    headers: {
+                        'Authorization': `Bearer ${jwtToken}`
+                    }
+                });
+                const users = await response.json();
+                const dropdown = document.getElementById('users');
+                dropdown.innerHTML = '';
+                users.sort((a, b) => a.localeCompare(b));
+                for (let i = 0; i < users.length; i++) {
+                    const option = document.createElement('option');
+                    option.value = users[i];
+                    option.textContent = users[i];
+                    dropdown.appendChild(option);
+                }
+        }
+
+
+        async function registerForLesson() {
+            const jwtToken = localStorage.getItem('jwtToken');
+            const user = document.getElementById('users').value;
+            if (!jwtToken || !user) {
+                alert('Please select a user and ensure you are logged in.');
+                return;
+            }
+            try {
+                const response = await fetch('/api/registerforlesson', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${jwtToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ user })
+                });
+                const result = await response.json();
+                alert(result.message);
+            } catch (error) {
+                console.error('Error registering for lesson:', error);
+                alert('Failed to register for lesson.');
+            }
+        }
+
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAdminAccess();
+            loadusers();
+        });
+
+    </script>
+</body>
+</html>
