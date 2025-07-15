@@ -196,8 +196,16 @@ async function join(eventId, userId) {
     await db.end();
 
     const max = config[group]?.max || Infinity;
-    const ofEnabled = config[group]?.of === true;
+    if (group in config){
+        const ofEnabled = config[group]?.of === true;
+        const ic = true;
+    }
+    else{
+        ic=false;
+        const ofEnabled = false;
+    }
 
+    
     const userFutureJoins = (allEvents.data.items || []).filter(event => {
         const joined = (event.description || '')
             .split(/\s+/)
@@ -206,11 +214,10 @@ async function join(eventId, userId) {
         const start = event.start?.dateTime ? new Date(event.start.dateTime) : null;
         return start && joined.includes(userId) && start > new Date();
     }).length;
-
+    if(ic){
     if (!ofEnabled && userFutureJoins >= max) {
-        return { success: false, reason: 'overflow' };
-    }
-
+        return { success: false, reason: 'overflow'  };
+    }}
     const res = await calendar.events.get({ calendarId, eventId });
     let ids = (res.data.description || '')
         .split(/\s+/)
@@ -435,6 +442,25 @@ function setupAppRoutes(app) {
     app.post('/logout', (req, res) => {
         res.json({ success: true, message: 'Logged out successfully' });
     });
+
+
+
+
+    app.post('/api/displaymax', async(req, res) => {
+
+        const db = await mysql.createConnection(DB_CONFIG);
+        const [rows] = await db.execute('SELECT grupp FROM users WHERE id = ?', [userId]
+        const group = rows[0]?.grupp;
+        await db.end();
+
+        if group in config){
+            res.json({ ic: true, max: config[group].max });
+        }
+        else{
+            res.json({ ic: false, max: 0 });
+        }
+    });
+
 
     // Apply requireAdmin middleware to all routes below this point
     // This ensures only admins can access these resources.

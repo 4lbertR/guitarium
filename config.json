@@ -1,12 +1,13 @@
 {
-  "B1": { "max": 6, "of": false, "time": "teisipäev 17.00–17.45" },
-  "B2": { "max": 6, "of": false, "time": "reede 14.00–14.45" },
-  "C1": { "max": 6, "of": false, "time": "kolmapäev 16.30–17.15" },
-  "C2": { "max": 6, "of": false, "time": "reede 15.00–15.45" },
-  "D":  { "max": 6, "of": false, "time": "reede 16.00–17.00" },
-  "E1": { "max": 6, "of": false, "time": "reede 17.45–19.15" },
-  "E2": { "max": 6, "of": false, "time": "reede 18.30–19.30" },
-  "F1": { "max": 6, "of": false, "time": "kolmapäev 18.30–19.30" },
-  "F2": { "max": 6, "of": false, "time": "reede 17.30-18.15" },
-  "G1": { "max": 6, "of": false, "time": "teisipäev 18.00–19.30" }
+  "B1": { "max": 6, "of": false},
+  "B2": { "max": 6, "of": false},
+  "C1": { "max": 6, "of": false},
+  "C2": { "max": 6, "of": false},
+  "D":  { "max": 6, "of": false},
+  "E1": { "max": 6, "of": false},
+  "E2": { "max": 6, "of": false},
+  "F1": { "max": 6, "of": false},
+  "F2": { "max": 6, "of": false},
+  "G1": { "max": 6, "of": false}
+
 }
