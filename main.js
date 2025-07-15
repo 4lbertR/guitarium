@@ -466,6 +466,16 @@ function setupAppRoutes(app) {
     app.get('/admin/delacc.html', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'index.html'));
     });
+    app.get('/admin/createlesson.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'static', 'admin', 'createlesson.html'));
+    });
+    app.get('/api/getgroups', async(req, res) => {
+        const db = await mysql.createConnection(DB_CONFIG);
+        const [rows] = await db.query('SELECT DISTINCT grupp FROM users');
+        await db.end();
+        const groups = rows.map(row => row.grupp);
+        res.json(groups);
+    });
 
 }
 

@@ -29,6 +29,11 @@
         document.addEventListener('DOMContentLoaded', checkAdminAccess);
     </script>
     <script>
+        const groups = await fetch('/api/getgroups', {
+              headers: {
+                'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT
+              }
+            })
         const x = ['group 1', 'group 2', 'group 3', 'group 4'];
         const dropdown = document.getElementById('groups');
         dropdown.innerHTML = '';
