@@ -206,6 +206,36 @@ input[type="time"]:focus {
     box-shadow: 0 0 0 3px rgba(124, 31, 89, 0.2);
 }
 
+/* Date Input Styles */
+input[type="date"] {
+    width: 100%;
+    max-width: 200px;
+    padding: 12px 16px;
+    font-size: 16px;
+    font-family: Arial, sans-serif;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    background-color: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 16px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+input[type="date"]:hover {
+    border-color: #7c1f59;
+    box-shadow: 0 2px 8px rgba(124, 31, 89, 0.1);
+}
+
+input[type="date"]:focus {
+    outline: none;
+    border-color: #7c1f59;
+    box-shadow: 0 0 0 3px rgba(124, 31, 89, 0.2);
+}
+
 /* Label Styles */
 label {
     display: block;
