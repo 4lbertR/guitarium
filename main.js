@@ -460,7 +460,7 @@ function setupAppRoutes(app) {
         const { group } = req.body;
 
         const db = await mysql.createConnection(DB_CONFIG);
-        const [result] = await db.execute('DELETE FROM users WHERE group = ?', [group]);
+        const [result] = await db.execute('DELETE FROM users WHERE grupp = ?', [group]);
         await db.end();
         if (result.affectedRows >= 1) {
             res.json({ success: true, message: 'Kontod, grupp on kustutatud' });
