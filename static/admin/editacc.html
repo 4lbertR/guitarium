@@ -92,7 +92,7 @@
             const jwtToken = localStorage.getItem('jwtToken');
             const user = document.getElementById('users').value;
 
-                const response = await fetch('/api/getuser', {
+                const response = await fetch('/api/getusers', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
