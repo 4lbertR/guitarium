@@ -9,5 +9,9 @@ For example:
 The groups can have any name (e.g E1 or Tennis 1), but the group name has to be consistent.
 A group can be created by creating an account that is a member of that group.
 After that every lesson that has the title of the group shows up for that person.
+
 At the moment a person can't be a member of 2 groups.
-Ps. This can not be bypassed by creating another user with the same full name but different password/group. ps. it will take the first created users password
+
+Ps. This can not be bypassed by creating another user with the same full name but different password/group. 
+
+Pps. Only the first account registered under a name will work.
