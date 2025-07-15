@@ -20,11 +20,13 @@
             <input type="text" id="password">
             <label for="group">Kasutaja grupp (nt E1, B2):</label>
             <input type="text" id="group" required>
+
         </div>
 
 
 
         <button id="changedatabutton">Muuda kasutaja andmeid</button>
+        <button id="deleteGroupButton">Kustuta kasutaja</button>
         <div id="message"></div>
     </div>
     
@@ -109,6 +111,32 @@
                 }
             
         }
+                document.getElementById('deleteGroupButton').addEventListener('click', async function() {
+            const jwtToken = localStorage.getItem('jwtToken');
+            const user = document.getElementById('users').value;
+            
+
+            if (!confirm(`Kas oled kindel, et tahad kustutada kasutaja "${user}"?`)) {
+                return; 
+            }
+            
+            const response = await fetch('/api/delete-account', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${jwtToken}`
+                },
+                body: JSON.stringify({ user })
+                });
+
+                if (response.ok) { 
+                    document.getElementById('message').textContent = `Kasutaja ${user} on edukalt kustutatud.`;
+                    loadusers();
+                } else {
+                    const errorData = await response.json();
+                    document.getElementById('message').textContent = `Viga: ${errorData.message}`;
+                }
+        });
     </script>
 </body>
 </html>
