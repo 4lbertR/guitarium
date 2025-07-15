@@ -200,7 +200,7 @@
         let howmany = 0;
         howmany = future.filter(e => e[6].includes(userId)).length;
         if(displaymax.ic){
-           document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}\nOled liitunud ${howmany}/${displaymax.max} tunniga`;
+           document.getElementById('fixedInfo').innerHTML = `Sinu grupp on ${group}<br>Oled liitunud ${howmany}/${displaymax.max} tunniga`;
         } else {
            document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
         }
