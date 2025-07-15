@@ -448,7 +448,7 @@ function setupAppRoutes(app) {
         } else {
             res.status(400).json(result);
         }
-    });
+    }); 
     app.post('/api/delete-account-fetch', async(req, res) => {
         const { userId } = req.body;
         const db = await mysql.createConnection(DB_CONFIG);
