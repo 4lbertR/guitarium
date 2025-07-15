@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/admin/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account</title>
+
+</head>
+<body>
+    <header>
+        
+    </header>
+    <div class="container">
+        <select id="users"></select>
+        <div class="form-group">
+            <label for="fullname">Ees- ja perekonnanimi:</label>
+            <input type="text" id="fullname" required>
+            <label for="password">Parool:</label>
+            <input type="text" id="password">
+            <label for="group">Kasutaja grupp (nt E1, B2):</label>
+            <input type="text" id="group" required>
+        </div>
+
+
+
+        <button id="changedatabutton">Muuda kasutaja andmeid</button>
+        <div id="message"></div>
+    </div>
+    
+    <script>
+        async function checkAdminAccess() {
+            const jwtToken = localStorage.getItem('jwtToken');
+            if (!jwtToken) {window.location.href = '/';return;}
+            try {const response = await fetch('/api/isadmin', {headers: {'Authorization': `Bearer ${jwtToken}`}});
+                const data = await response.json();
+                if (!data.admin) {window.location.href = '/success.html';}
+            } catch (error) {localStorage.removeItem('jwtToken');window.location.href = '/';}
+        }
+        document.addEventListener('DOMContentLoaded', checkAdminAccess);
+    </script>
+    <script>
+        async function loadusers() {
+            const jwtToken = localStorage.getItem('jwtToken');                                                      
+                const response = await fetch('/api/getusers', {
+                    headers: {
+                        'Authorization': `Bearer ${jwtToken}`
+                    }
+                });
+                const users = await response.json();
+                const dropdown = document.getElementById('users');
+                dropdown.innerHTML = '';
+                users.sort((a, b) => a.localeCompare(b));
+                for (let i = 0; i < users.length; i++) {
+                    const option = document.createElement('option');
+                    option.value = users[i];
+                    option.textContent = users[i];
+                    dropdown.appendChild(option);
+                }
+        }
+        async function changeUserData() {
+            const jwtToken = localStorage.getItem('jwtToken');
+            const user = document.getElementById('users').value;
+            const fullname = document.getElementById('fullname').value;
+            const password = document.getElementById('password').value;
+            const group = document.getElementById('group').value;
+
+            if (!confirm(`Kas oled kindel, et tahad muuta kasutaja "${user}" andmeid?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/edituser', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${jwtToken}`
+                    },
+                    body: JSON.stringify({ user, fullname, password, group })
+                });
+
+                const data = await response.json();
+                document.getElementById('message').textContent = data.message || 'Kasutaja andmed muudetud.';
+            } catch (error) {
+                console.error('Error changing user data:', error);
+                document.getElementById('message').textContent = 'Viga kasutaja andmete muutmisel.';
+            }
+        }
+        async function fetchUserData() {
+            const jwtToken = localStorage.getItem('jwtToken');
+            const user = document.getElementById('users').value;
+
+                const response = await fetch('/api/getuser', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${jwtToken}`
+                    },
+                    body: JSON.stringify({ user })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('fullname').value = data.fullname;
+                    document.getElementById('password').value = '';
+                    document.getElementById('group').value = data.group;
+                } else {
+                    document.getElementById('message').textContent = data.message
+                }
+            
+        }
+    </script>
+</body>
+</html>
