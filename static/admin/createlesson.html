@@ -109,32 +109,7 @@
             loadGroups();
         });
 
-        document.getElementById('deleteGroupButton').addEventListener('click', async function() {
-            const jwtToken = localStorage.getItem('jwtToken');
-            const group = document.getElementById('groups').value;
-            
-
-            if (!confirm(`Kas oled kindel, et tahad kustutada grupi "${group}" ja kõik selle kasutajad?`)) {
-                return; 
-            }
-            
-            const response = await fetch('/api/deletegroup', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${jwtToken}`
-                },
-                body: JSON.stringify({ group })
-                });
-
-                if (response.ok) {
-                    document.getElementById('message').textContent = `Grupp ${group} on edukalt kustutatud.`;
-                    loadGroups(); // Refresh the group list
-                } else {
-                    const errorData = await response.json();
-                    document.getElementById('message').textContent = `Viga: ${errorData.message}`;
-                }
-        });
+        
 
     </script>
 </body>
