@@ -670,7 +670,8 @@ function setupAppRoutes(app) {
     app.get('/admin/editacc.html', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'editacc.html'));
     });
-}
+});
 
+}
 
 module.exports = { success: setupAppRoutes };
