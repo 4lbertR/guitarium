@@ -13,11 +13,11 @@
     </header>
     <div class="container">
         <select id="groups"></select>
-
+        <button id="deleteGroupButton">Kustuta Grupp</button>
+        <div id="message"></div>
     </div>
     
     <script>
-        //ADMIN CHECK
         async function checkAdminAccess() {
             const jwtToken = localStorage.getItem('jwtToken');
             if (!jwtToken) {window.location.href = '/';return;}
@@ -52,6 +52,30 @@
             checkAdminAccess();
             loadGroups();
         });
+
+        document.getElementById('deleteGroupButton').addEventListener('click', async function() {
+            const jwtToken = localStorage.getItem('jwtToken');
+            const group = document.getElementById('groups').value;
+        
+        
+            const response = await fetch('/api/deletegroup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${jwtToken}`
+                },
+                body: JSON.stringify({ group })
+                });
+
+                if (response.ok) {
+                    document.getElementById('message').textContent = `Grupp ${group} on edukalt kustutatud.`;
+                    loadGroups(); // Refresh the group list
+                } else {
+                    const errorData = await response.json();
+                    document.getElementById('message').textContent = `Viga: ${errorData.message}`;
+                }
+        });
+
     </script>
 </body>
 </html>
