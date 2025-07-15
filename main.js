@@ -727,6 +727,7 @@ function setupAppRoutes(app) {
                 };
             });
             res.json(userFutureJoins);
+        });
     
 
     app.get('/admin/createacc', (req, res) => {
