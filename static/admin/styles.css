@@ -120,21 +120,10 @@ button {
     transition: all 0.3s ease;
     margin: 8px 4px;
 }
-
-#deleteGroupButton {
+button:hover {
     background-color: #7c1f59;
-    color: white;
-}
-
-#deleteGroupButton:hover {
-    background-color: #5d1742;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(124, 31, 89, 0.3);
-}
-
-#deleteGroupButton:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 8px rgba(124, 31, 89, 0.3);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(124, 31, 89, 0.1);
 }
 
 /* Message Styles */
