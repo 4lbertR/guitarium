@@ -519,6 +519,96 @@ function setupAppRoutes(app) {
             eventId: result.data.id
         });
     });
+
+    app.get('/api/getevents-admin', async(req, res) => {
+        const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
+        const authClient = await auth.getClient();
+        const calendar = google.calendar({ version: 'v3', auth: authClient });
+
+        const result = await calendar.events.list({
+            calendarId,
+            maxResults: 100,
+            singleEvents: false,
+            orderBy: 'startTime'
+        });
+
+        const events = (result.data.items || []).map(event => ({
+            id: event.id,
+            group: event.summary,
+            start: event.start?.dateTime,
+            end: event.end?.dateTime,
+            recurring: event.recurrence ? event.recurrence[0].includes('DAILY') ? 'daily' : 
+                      event.recurrence[0].includes('WEEKLY') ? 'weekly' : 
+                      event.recurrence[0].includes('MONTHLY') ? 'monthly' : null : null
+        }));
+
+        res.json(events);
+    });
+
+    app.post('/api/getrecurring-instances', async(req, res) => {
+        const { eventId } = req.body;
+        
+        const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
+        const authClient = await auth.getClient();
+        const calendar = google.calendar({ version: 'v3', auth: authClient });
+
+        const now = new Date();
+        const future = new Date();
+        future.setFullYear(now.getFullYear() + 1);
+
+        const result = await calendar.events.instances({
+            calendarId,
+            eventId,
+            timeMin: now.toISOString(),
+            timeMax: future.toISOString(),
+            maxResults: 20
+        });
+
+        const instances = (result.data.items || []).map(instance => ({
+            id: instance.id,
+            start: instance.start?.dateTime,
+            end: instance.end?.dateTime
+        }));
+
+        res.json(instances);
+    });
+
+    app.post('/api/delete-lesson', async(req, res) => {
+        const { eventId, deleteType, instanceId, afterDate } = req.body;
+        
+        const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
+        const authClient = await auth.getClient();
+        const calendar = google.calendar({ version: 'v3', auth: authClient });
+
+        if (deleteType === 'single' && instanceId) {
+            await calendar.events.delete({
+                calendarId,
+                eventId: instanceId
+            });
+            res.json({ success: true, message: 'Üks tund on edukalt kustutatud' });
+        } else if (deleteType === 'after' && afterDate) {
+            const event = await calendar.events.get({ calendarId, eventId });
+            const originalRecurrence = event.data.recurrence[0];
+            const untilDate = new Date(afterDate);
+            untilDate.setDate(untilDate.getDate() - 1);
+            const untilString = untilDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+            
+            await calendar.events.patch({
+                calendarId,
+                eventId,
+                requestBody: {
+                    recurrence: [originalRecurrence + ';UNTIL=' + untilString]
+                }
+            });
+            res.json({ success: true, message: 'Tunnid alates valitud kuupäevast on edukalt kustutatud' });
+        } else {
+            await calendar.events.delete({
+                calendarId,
+                eventId
+            });
+            res.json({ success: true, message: 'Tund on edukalt kustutatud' });
+        }
+    });
     app.get('/admin/createacc', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'createacc.html'));
     });
@@ -542,6 +632,10 @@ function setupAppRoutes(app) {
 
     app.get('/admin/delgroup.html', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'delgroup.html'));
+    });
+    
+    app.get('/admin/delreplesson.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'static', 'admin', 'delreplesson.html'));
     });
 }
 
