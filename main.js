@@ -196,16 +196,14 @@ async function join(eventId, userId) {
     await db.end();
 
     const max = config[group]?.max || Infinity;
+    let ic = false;
+    let ofEnabled = false;
+    
     if (group in config){
-        const ofEnabled = config[group]?.of === true;
-        const ic = true;
-    }
-    else{
-        ic=false;
-        const ofEnabled = false;
+        ofEnabled = config[group]?.of === true;
+        ic = true;
     }
 
-    
     const userFutureJoins = (allEvents.data.items || []).filter(event => {
         const joined = (event.description || '')
             .split(/\s+/)
@@ -214,10 +212,10 @@ async function join(eventId, userId) {
         const start = event.start?.dateTime ? new Date(event.start.dateTime) : null;
         return start && joined.includes(userId) && start > new Date();
     }).length;
-    if(ic){
-    if (!ofEnabled && userFutureJoins >= max) {
+    
+    if(ic && !ofEnabled && userFutureJoins >= max) {
         return { success: false, reason: 'overflow'  };
-    }}
+    }
     const res = await calendar.events.get({ calendarId, eventId });
     let ids = (res.data.description || '')
         .split(/\s+/)
@@ -446,10 +444,11 @@ function setupAppRoutes(app) {
 
 
 
-    app.post('/api/displaymax', async(req, res) => {
-
+    app.get('/api/displaymax', async(req, res) => {
+        const userId = req.userId; // Get userId from JWT token
+        
         const db = await mysql.createConnection(DB_CONFIG);
-        const [rows] = await db.execute('SELECT grupp FROM users WHERE id = ?', [userId])
+        const [rows] = await db.execute('SELECT grupp FROM users WHERE id = ?', [userId]);
         const group = rows[0]?.grupp;
         await db.end();
 
