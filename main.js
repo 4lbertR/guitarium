@@ -609,6 +609,36 @@ function setupAppRoutes(app) {
             res.json({ success: true, message: 'Tund on edukalt kustutatud' });
         }
     });
+    app.post('/api/edit-account', async(req, res) => {
+        const { userId, fullname, password, group } = req.body;
+        if (!userId || !fullname || !group) {
+            return res.status(400).json({ success: false, message: 'User ID, full name, and group are required.' });
+        }
+        try{
+            //IMplement the change logic, if password is provided, hash it, if not, keep the old one
+            const db = await mysql.createConnection(DB_CONFIG);
+            let hashedPassword = null;
+            if (password) {
+                hashedPassword = await bcrypt.hash(password, 12);
+            }
+            const [result] = await db.execute(
+                'UPDATE users SET fullname = ?, grupp = ?' + (hashedPassword ? ', password = ?' : '') + ' WHERE id = ?',
+                [fullname, group].concat(hashedPassword ? [hashedPassword] : []).concat([userId])
+            );
+            await db.end();
+            if (result.affectedRows === 1) {
+                res.json({ success: true, message: 'Kasutaja andmed on muudetud' });
+            }   else {
+                res.status(400).json({ success: false, message: 'Failed to update account.' });
+            } 
+
+        } catch (error) {
+            console.error('Error updating account:', error);
+            res.status(500).json({ success: false, message: 'Internal server error' });
+        }
+
+
+
     app.get('/admin/createacc', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'createacc.html'));
     });
@@ -637,6 +667,10 @@ function setupAppRoutes(app) {
     app.get('/admin/delreplesson.html', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'delreplesson.html'));
     });
+    app.get('/admin/editacc.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'static', 'admin', 'editacc.html'));
+    });
 }
+
 
 module.exports = { success: setupAppRoutes };
