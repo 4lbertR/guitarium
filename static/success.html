@@ -261,8 +261,13 @@
                     details.classList.toggle('joined');
                     btn.textContent = hasJoined ? 'Loobu' : 'Liitu';
                     howmany += hasJoined ? 1 : -1;
-                    //document.getElementById('joinedCount').textContent =
-                      //`Liitunud ${howmany}/${maxLimit} tunniga`;
+                    const displaymax = await displaymaxResponse.json();
+                    if(displaymax.ic){
+                      document.getElementById('fixedInfo').innerHTML = `Sinu grupp on ${group}<br>Oled liitunud ${howmany}/${displaymax.max} tunniga`;
+                    } else {
+                      document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
+                    }
+
 
                     const existingIcon = summary.querySelector('.lesson-checkmark-icon'); // Corrected typo
                     if (hasJoined) {
