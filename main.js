@@ -731,67 +731,26 @@ function setupAppRoutes(app) {
         app.post('/api/bulk-load-accounts', async (req, res) => {
             const { fullnameColumn, passwordColumn, groupColumn, spreadsheetId } = req.body;
         
+            console.log('Request body:', req.body);
+        
             if (!fullnameColumn || !passwordColumn || !groupColumn || !spreadsheetId) {
                 return res.status(400).json({ success: false, message: 'All fields are required' });
             }
         
             try {
-                const auth = new google.auth.GoogleAuth({
-                    credentials: key,
-                    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
-                });
-                const authClient = await auth.getClient();
-                const sheets = google.sheets({ version: 'v4', auth: authClient });
-        
-                // Fetch data from the specified spreadsheet
-                const range = `${fullnameColumn}:${groupColumn}`; // Dynamically set the range
                 const result = await sheets.spreadsheets.values.get({
                     spreadsheetId,
-                    range
+                    range: `${fullnameColumn}:${groupColumn}`
                 });
         
                 const rows = result.data.values;
+                console.log('Rows fetched:', rows);
+        
                 if (!rows || rows.length <= 1) {
                     return res.json({ success: false, message: 'No data found in spreadsheet' });
                 }
         
-                let successCount = 0;
-                let errorCount = 0;
-                const errors = [];
-        
-                // Skip header row
-                for (let i = 1; i < rows.length; i++) {
-                    const fullname = rows[i][0];
-                    const password = rows[i][1];
-                    const group = rows[i][2];
-        
-                    if (!fullname || !password || !group) {
-                        errorCount++;
-                        errors.push(`Row ${i + 1}: Missing required fields`);
-                        continue;
-                    }
-        
-                    try {
-                        const result = await createAccount(fullname, password, group);
-                        if (result.success) {
-                            successCount++;
-                        } else {
-                            errorCount++;
-                            errors.push(`Row ${i + 1}: ${result.message}`);
-                        }
-                    } catch (error) {
-                        errorCount++;
-                        errors.push(`Row ${i + 1}: ${error.message}`);
-                    }
-                }
-        
-                res.json({
-                    success: true,
-                    count: successCount,
-                    errors: errorCount,
-                    errorDetails: errors,
-                    message: `Loaded ${successCount} accounts successfully. ${errorCount} errors.`
-                });
+                // Process rows...
             } catch (error) {
                 console.error('Error loading accounts from sheets:', error);
                 res.status(500).json({ success: false, message: 'Failed to load accounts from Google Sheets' });
