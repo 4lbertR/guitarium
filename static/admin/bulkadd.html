@@ -4,7 +4,7 @@
     <link rel="stylesheet" href="/admin/styles.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Account</title>
+    <title>Bulk Add Accounts</title>
 </head>
 <body>
     <header>
@@ -32,6 +32,27 @@
     </div>
 
     <script>
+        // Check admin access on page load
+        async function checkAdminAccess() {
+            const jwtToken = localStorage.getItem('jwtToken');
+            if (!jwtToken) {
+                window.location.href = '/';
+                return;
+            }
+            try {
+                const response = await fetch('/api/isadmin', {
+                    headers: { 'Authorization': `Bearer ${jwtToken}` }
+                });
+                const data = await response.json();
+                if (!data.admin) {
+                    window.location.href = '/success.html';
+                }
+            } catch (error) {
+                localStorage.removeItem('jwtToken');
+                window.location.href = '/';
+            }
+        }
+
         async function loadAccountsFromSheets() {
             const jwtToken = localStorage.getItem('jwtToken');
             const messageDiv = document.getElementById('message');
@@ -39,6 +60,14 @@
             const passwordColumn = document.getElementById('passwordColumn').value;
             const groupColumn = document.getElementById('groupColumn').value;
             const spreadsheetLink = document.getElementById('spreadsheetLink').value;
+
+            // Debug: Show what we collected
+            messageDiv.innerHTML = `Debug: Collected values<br>
+                Fullname Column: ${fullnameColumn}<br>
+                Password Column: ${passwordColumn}<br>
+                Group Column: ${groupColumn}<br>
+                Spreadsheet Link: ${spreadsheetLink}`;
+            messageDiv.style.color = 'blue';
 
             if (!fullnameColumn || !passwordColumn || !groupColumn || !spreadsheetLink) {
                 messageDiv.textContent = 'Kõik väljad on kohustuslikud!';
@@ -55,8 +84,21 @@
             }
             const spreadsheetId = match[1];
 
+            // Debug: Show extracted spreadsheetId
+            messageDiv.innerHTML += `<br>Extracted Spreadsheet ID: ${spreadsheetId}`;
+
             try {
-                messageDiv.textContent = 'Loading accounts from Google Sheets...';
+                messageDiv.innerHTML += '<br>Sending request to server...';
+
+                const requestBody = {
+                    fullnameColumn,
+                    passwordColumn,
+                    groupColumn,
+                    spreadsheetId
+                };
+
+                // Debug: Show request body
+                messageDiv.innerHTML += `<br>Request Body: ${JSON.stringify(requestBody)}`;
 
                 const response = await fetch('/api/bulk-load-accounts', {
                     method: 'POST',
@@ -64,30 +106,35 @@
                         'Authorization': `Bearer ${jwtToken}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        fullnameColumn,
-                        passwordColumn,
-                        groupColumn,
-                        spreadsheetId
-                    })
+                    body: JSON.stringify(requestBody)
                 });
+
+                // Debug: Show response status
+                messageDiv.innerHTML += `<br>Response Status: ${response.status}`;
 
                 const data = await response.json();
 
+                // Debug: Show response data
+                messageDiv.innerHTML += `<br>Response Data: ${JSON.stringify(data)}`;
+
                 if (response.ok) {
-                    messageDiv.textContent = `Successfully loaded ${data.count} accounts from Google Sheets`;
+                    messageDiv.innerHTML = `Successfully loaded ${data.count} accounts from Google Sheets. ${data.errors || 0} errors.`;
                     messageDiv.style.color = 'green';
+                    if (data.errorDetails && data.errorDetails.length > 0) {
+                        messageDiv.innerHTML += '<br>Errors: ' + data.errorDetails.join('<br>');
+                    }
                 } else {
-                    messageDiv.textContent = `Error: ${data.message}`;
+                    messageDiv.innerHTML = `Error: ${data.message}<br>Full response: ${JSON.stringify(data)}`;
                     messageDiv.style.color = 'red';
                 }
             } catch (error) {
-                messageDiv.textContent = `Error loading accounts: ${error.message}`;
+                messageDiv.innerHTML = `Error loading accounts: ${error.message}<br>Stack: ${error.stack}`;
                 messageDiv.style.color = 'red';
             }
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            checkAdminAccess();
             const loadButton = document.getElementById('loadAccountsButton');
             loadButton.onclick = loadAccountsFromSheets;
         });
