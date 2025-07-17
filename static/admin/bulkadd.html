@@ -11,8 +11,9 @@
         <button onclick="window.location.href='/admin/index.html'">Tagasi</button>
     </header>
     <div class="container">
+        <div id="message"></div>
 
-        <!-- New fields for bulk add -->
+        <!-- Fields for bulk add -->
         <div class="bulk-add-fields">
             <label for="fullnameColumn">Täisnimi kolumn:</label>
             <input type="text" id="fullnameColumn" placeholder="Näiteks: A">
@@ -31,27 +32,6 @@
     </div>
 
     <script>
-        async function checkAdminAccess() {
-            const jwtToken = localStorage.getItem('jwtToken');
-            if (!jwtToken) {
-                window.location.href = '/';
-                return;
-            }
-            try {
-                const response = await fetch('/api/isadmin', {
-                    headers: { 'Authorization': `Bearer ${jwtToken}` }
-                });
-                const data = await response.json();
-                if (!data.admin) {
-                    window.location.href = '/success.html';
-                }
-            } catch (error) {
-                localStorage.removeItem('jwtToken');
-                window.location.href = '/';
-            }
-        }
-        document.addEventListener('DOMContentLoaded', checkAdminAccess);
-
         async function loadAccountsFromSheets() {
             const jwtToken = localStorage.getItem('jwtToken');
             const messageDiv = document.getElementById('message');

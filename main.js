@@ -738,9 +738,20 @@ function setupAppRoutes(app) {
             }
         
             try {
+                const auth = new google.auth.GoogleAuth({
+                    credentials: key,
+                    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
+                });
+                const authClient = await auth.getClient();
+                const sheets = google.sheets({ version: 'v4', auth: authClient });
+        
+                // Fetch data from the specified spreadsheet
+                const range = `${fullnameColumn}:${groupColumn}`;
+                console.log('Fetching range:', range);
+        
                 const result = await sheets.spreadsheets.values.get({
                     spreadsheetId,
-                    range: `${fullnameColumn}:${groupColumn}`
+                    range
                 });
         
                 const rows = result.data.values;
@@ -750,7 +761,43 @@ function setupAppRoutes(app) {
                     return res.json({ success: false, message: 'No data found in spreadsheet' });
                 }
         
-                // Process rows...
+                let successCount = 0;
+                let errorCount = 0;
+                const errors = [];
+        
+                // Skip header row
+                for (let i = 1; i < rows.length; i++) {
+                    const fullname = rows[i][0];
+                    const password = rows[i][1];
+                    const group = rows[i][2];
+        
+                    if (!fullname || !password || !group) {
+                        errorCount++;
+                        errors.push(`Row ${i + 1}: Missing required fields`);
+                        continue;
+                    }
+        
+                    try {
+                        const result = await createAccount(fullname, password, group);
+                        if (result.success) {
+                            successCount++;
+                        } else {
+                            errorCount++;
+                            errors.push(`Row ${i + 1}: ${result.message}`);
+                        }
+                    } catch (error) {
+                        errorCount++;
+                        errors.push(`Row ${i + 1}: ${error.message}`);
+                    }
+                }
+        
+                res.json({
+                    success: true,
+                    count: successCount,
+                    errors: errorCount,
+                    errorDetails: errors,
+                    message: `Loaded ${successCount} accounts successfully. ${errorCount} errors.`
+                });
             } catch (error) {
                 console.error('Error loading accounts from sheets:', error);
                 res.status(500).json({ success: false, message: 'Failed to load accounts from Google Sheets' });
