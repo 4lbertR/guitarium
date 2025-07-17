@@ -26,8 +26,8 @@
             <label for="groupColumn">Grupp kolumn:</label>
             <input type="text" id="groupColumn" placeholder="Näiteks: C">
 
-            <label for="spreadsheetId">Spreadsheet ID:</label>
-            <input type="text" id="spreadsheetId" placeholder="Sisesta Spreadsheet ID">
+            <label for="spreadsheetLink">Google Sheets Link:</label>
+            <input type="text" id="spreadsheetLink" placeholder="Paste the entire Google Sheets link">
         </div>
 
         <button id="loadAccountsButton">Load Accounts from Google Sheets</button>
@@ -61,13 +61,22 @@
             const fullnameColumn = document.getElementById('fullnameColumn').value;
             const passwordColumn = document.getElementById('passwordColumn').value;
             const groupColumn = document.getElementById('groupColumn').value;
-            const spreadsheetId = document.getElementById('spreadsheetId').value;
+            const spreadsheetLink = document.getElementById('spreadsheetLink').value;
 
-            if (!fullnameColumn || !passwordColumn || !groupColumn || !spreadsheetId) {
+            if (!fullnameColumn || !passwordColumn || !groupColumn || !spreadsheetLink) {
                 messageDiv.textContent = 'Kõik väljad on kohustuslikud!';
                 messageDiv.style.color = 'red';
                 return;
             }
+
+            // Extract the spreadsheetId from the link
+            const match = spreadsheetLink.match(/\/d\/([a-zA-Z0-9-_]+)/);
+            if (!match || !match[1]) {
+                messageDiv.textContent = 'Invalid Google Sheets link!';
+                messageDiv.style.color = 'red';
+                return;
+            }
+            const spreadsheetId = match[1];
 
             try {
                 messageDiv.textContent = 'Loading accounts from Google Sheets...';
