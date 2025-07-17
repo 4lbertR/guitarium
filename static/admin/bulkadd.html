@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/admin/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account</title>
+</head>
+<body>
+    <header>
+        <button onclick="window.location.href='/admin/index.html'">Tagasi</button>
+    </header>
+    <div class="container">
+        <select id="groups"></select>
+        <button id="deleteGroupButton">Kustuta Grupp</button>
+        <div id="message"></div>
+
+        <!-- New fields for bulk add -->
+        <div class="bulk-add-fields">
+            <label for="fullnameColumn">Täisnimi kolumn:</label>
+            <input type="text" id="fullnameColumn" placeholder="Näiteks: A">
+
+            <label for="passwordColumn">Parool kolumn:</label>
+            <input type="text" id="passwordColumn" placeholder="Näiteks: B">
+
+            <label for="groupColumn">Grupp kolumn:</label>
+            <input type="text" id="groupColumn" placeholder="Näiteks: C">
+
+            <label for="spreadsheetId">Spreadsheet ID:</label>
+            <input type="text" id="spreadsheetId" placeholder="Sisesta Spreadsheet ID">
+        </div>
+
+        <button id="loadAccountsButton">Load Accounts from Google Sheets</button>
+    </div>
+
+    <script>
+        async function checkAdminAccess() {
+            const jwtToken = localStorage.getItem('jwtToken');
+            if (!jwtToken) {
+                window.location.href = '/';
+                return;
+            }
+            try {
+                const response = await fetch('/api/isadmin', {
+                    headers: { 'Authorization': `Bearer ${jwtToken}` }
+                });
+                const data = await response.json();
+                if (!data.admin) {
+                    window.location.href = '/success.html';
+                }
+            } catch (error) {
+                localStorage.removeItem('jwtToken');
+                window.location.href = '/';
+            }
+        }
+        document.addEventListener('DOMContentLoaded', checkAdminAccess);
+
+        async function loadAccountsFromSheets() {
+            const jwtToken = localStorage.getItem('jwtToken');
+            const messageDiv = document.getElementById('message');
+            const fullnameColumn = document.getElementById('fullnameColumn').value;
+            const passwordColumn = document.getElementById('passwordColumn').value;
+            const groupColumn = document.getElementById('groupColumn').value;
+            const spreadsheetId = document.getElementById('spreadsheetId').value;
+
+            if (!fullnameColumn || !passwordColumn || !groupColumn || !spreadsheetId) {
+                messageDiv.textContent = 'Kõik väljad on kohustuslikud!';
+                messageDiv.style.color = 'red';
+                return;
+            }
+
+            try {
+                messageDiv.textContent = 'Loading accounts from Google Sheets...';
+
+                const response = await fetch('/api/bulk-load-accounts', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${jwtToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fullnameColumn,
+                        passwordColumn,
+                        groupColumn,
+                        spreadsheetId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    messageDiv.textContent = `Successfully loaded ${data.count} accounts from Google Sheets`;
+                    messageDiv.style.color = 'green';
+                } else {
+                    messageDiv.textContent = `Error: ${data.message}`;
+                    messageDiv.style.color = 'red';
+                }
+            } catch (error) {
+                messageDiv.textContent = `Error loading accounts: ${error.message}`;
+                messageDiv.style.color = 'red';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const loadButton = document.getElementById('loadAccountsButton');
+            loadButton.onclick = loadAccountsFromSheets;
+        });
+    </script>
+</body>
+</html>
