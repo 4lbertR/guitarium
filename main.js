@@ -701,7 +701,6 @@ function setupAppRoutes(app) {
         if (!userId) {
             return res.status(400).json({ success: false, message: 'User ID is required.' });
         }
-        try {
             const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
             const authClient = await auth.getClient();  
             const calendar = google.calendar({ version: 'v3', auth: authClient });
