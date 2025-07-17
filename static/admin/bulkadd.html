@@ -61,14 +61,6 @@
             const groupColumn = document.getElementById('groupColumn').value;
             const spreadsheetLink = document.getElementById('spreadsheetLink').value;
 
-            // Debug: Show what we collected
-            messageDiv.innerHTML = `Debug: Collected values<br>
-                Fullname Column: ${fullnameColumn}<br>
-                Password Column: ${passwordColumn}<br>
-                Group Column: ${groupColumn}<br>
-                Spreadsheet Link: ${spreadsheetLink}`;
-            messageDiv.style.color = 'blue';
-
             if (!fullnameColumn || !passwordColumn || !groupColumn || !spreadsheetLink) {
                 messageDiv.textContent = 'Kõik väljad on kohustuslikud!';
                 messageDiv.style.color = 'red';
@@ -84,21 +76,9 @@
             }
             const spreadsheetId = match[1];
 
-            // Debug: Show extracted spreadsheetId
-            messageDiv.innerHTML += `<br>Extracted Spreadsheet ID: ${spreadsheetId}`;
-
             try {
-                messageDiv.innerHTML += '<br>Sending request to server...';
-
-                const requestBody = {
-                    fullnameColumn,
-                    passwordColumn,
-                    groupColumn,
-                    spreadsheetId
-                };
-
-                // Debug: Show request body
-                messageDiv.innerHTML += `<br>Request Body: ${JSON.stringify(requestBody)}`;
+                messageDiv.textContent = 'Loading accounts from Google Sheets...';
+                messageDiv.style.color = 'blue';
 
                 const response = await fetch('/api/bulk-load-accounts', {
                     method: 'POST',
@@ -106,16 +86,15 @@
                         'Authorization': `Bearer ${jwtToken}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(requestBody)
+                    body: JSON.stringify({
+                        fullnameColumn,
+                        passwordColumn,
+                        groupColumn,
+                        spreadsheetId
+                    })
                 });
 
-                // Debug: Show response status
-                messageDiv.innerHTML += `<br>Response Status: ${response.status}`;
-
                 const data = await response.json();
-
-                // Debug: Show response data
-                messageDiv.innerHTML += `<br>Response Data: ${JSON.stringify(data)}`;
 
                 if (response.ok) {
                     messageDiv.innerHTML = `Successfully loaded ${data.count} accounts from Google Sheets. ${data.errors || 0} errors.`;
@@ -124,11 +103,11 @@
                         messageDiv.innerHTML += '<br>Errors: ' + data.errorDetails.join('<br>');
                     }
                 } else {
-                    messageDiv.innerHTML = `Error: ${data.message}<br>Full response: ${JSON.stringify(data)}`;
+                    messageDiv.textContent = `Error: ${data.message}`;
                     messageDiv.style.color = 'red';
                 }
             } catch (error) {
-                messageDiv.innerHTML = `Error loading accounts: ${error.message}<br>Stack: ${error.stack}`;
+                messageDiv.textContent = `Error loading accounts: ${error.message}`;
                 messageDiv.style.color = 'red';
             }
         }

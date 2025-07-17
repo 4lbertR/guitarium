@@ -725,74 +725,36 @@ function setupAppRoutes(app) {
         });
     
     app.post('/api/bulk-load-accounts', async (req, res) => {
-        console.log('=== BULK LOAD ACCOUNTS DEBUG START ===');
-        console.log('Request received with body:', JSON.stringify(req.body, null, 2));
-        
         const { fullnameColumn, passwordColumn, groupColumn, spreadsheetId } = req.body;
-        
-        console.log('Extracted parameters:');
-        console.log('- fullnameColumn:', fullnameColumn);
-        console.log('- passwordColumn:', passwordColumn);
-        console.log('- groupColumn:', groupColumn);
-        console.log('- spreadsheetId:', spreadsheetId);
 
         if (!fullnameColumn || !passwordColumn || !groupColumn || !spreadsheetId) {
-            console.log('ERROR: Missing required fields');
             return res.status(400).json({ 
                 success: false, 
-                message: 'All fields are required',
-                debug: { fullnameColumn, passwordColumn, groupColumn, spreadsheetId }
+                message: 'All fields are required'
             });
         }
 
         try {
-            console.log('Attempting to authenticate with Google...');
-            console.log('Google key credentials:', {
-                type: key.type,
-                project_id: key.project_id,
-                client_email: key.client_email,
-                has_private_key: !!key.private_key
-            });
-
             const auth = new google.auth.GoogleAuth({
                 credentials: key,
                 scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
             });
             
-            console.log('Getting auth client...');
             const authClient = await auth.getClient();
-            console.log('Auth client obtained successfully');
-            
             const sheets = google.sheets({ version: 'v4', auth: authClient });
-            console.log('Sheets API client created');
 
-            // Fetch data from the specified spreadsheet
             const range = `${fullnameColumn}:${groupColumn}`;
-            console.log('Fetching range:', range);
-            console.log('From spreadsheet ID:', spreadsheetId);
-
             const result = await sheets.spreadsheets.values.get({
                 spreadsheetId,
                 range
             });
 
-            console.log('Google Sheets API response received');
-            console.log('Response status:', result.status);
-            console.log('Response data structure:', {
-                hasData: !!result.data,
-                hasValues: !!result.data?.values,
-                valuesLength: result.data?.values?.length || 0
-            });
-
             const rows = result.data.values;
-            console.log('Rows fetched from spreadsheet:', rows);
 
             if (!rows || rows.length <= 1) {
-                console.log('No data found in spreadsheet - rows:', rows);
                 return res.json({ 
                     success: false, 
-                    message: 'No data found in spreadsheet',
-                    debug: { rows, rowsLength: rows?.length }
+                    message: 'No data found in spreadsheet'
                 });
             }
 
@@ -800,87 +762,44 @@ function setupAppRoutes(app) {
             let errorCount = 0;
             const errors = [];
 
-            console.log(`Processing ${rows.length - 1} rows (skipping header)`);
-
             // Skip header row
             for (let i = 1; i < rows.length; i++) {
                 const currentRow = rows[i];
-                console.log(`Processing row ${i + 1}:`, currentRow);
-                
                 const fullname = currentRow[0];
                 const password = currentRow[1];
                 const group = currentRow[2];
 
-                console.log(`Row ${i + 1} data:`, { fullname, password: password ? '[HIDDEN]' : null, group });
-
                 if (!fullname || !password || !group) {
                     errorCount++;
-                    const errorMsg = `Row ${i + 1}: Missing required fields (fullname: ${!!fullname}, password: ${!!password}, group: ${!!group})`;
-                    console.log('ERROR:', errorMsg);
-                    errors.push(errorMsg);
+                    errors.push(`Row ${i + 1}: Missing required fields`);
                     continue;
                 }
 
                 try {
-                    console.log(`Creating account for: ${fullname} in group: ${group}`);
                     const result = await createAccount(fullname, password, group);
-                    console.log(`Account creation result for ${fullname}:`, result);
-                    
                     if (result.success) {
                         successCount++;
-                        console.log(`SUCCESS: Account created for ${fullname}`);
                     } else {
                         errorCount++;
-                        const errorMsg = `Row ${i + 1}: ${result.message}`;
-                        console.log('ACCOUNT CREATION ERROR:', errorMsg);
-                        errors.push(errorMsg);
+                        errors.push(`Row ${i + 1}: ${result.message}`);
                     }
                 } catch (error) {
                     errorCount++;
-                    const errorMsg = `Row ${i + 1}: ${error.message}`;
-                    console.log('EXCEPTION during account creation:', error);
-                    errors.push(errorMsg);
+                    errors.push(`Row ${i + 1}: ${error.message}`);
                 }
             }
 
-            const response = {
+            res.json({
                 success: true,
                 count: successCount,
                 errors: errorCount,
                 errorDetails: errors,
-                message: `Loaded ${successCount} accounts successfully. ${errorCount} errors.`,
-                debug: {
-                    totalRowsProcessed: rows.length - 1,
-                    range: range,
-                    spreadsheetId: spreadsheetId
-                }
-            };
-
-            console.log('Final response:', response);
-            console.log('=== BULK LOAD ACCOUNTS DEBUG END ===');
-            
-            res.json(response);
-        } catch (error) {
-            console.log('=== BULK LOAD ACCOUNTS CRITICAL ERROR ===');
-            console.error('Critical error in bulk-load-accounts:', error);
-            console.error('Error stack:', error.stack);
-            console.error('Error details:', {
-                name: error.name,
-                message: error.message,
-                code: error.code,
-                response: error.response?.data
+                message: `Loaded ${successCount} accounts successfully. ${errorCount} errors.`
             });
-            console.log('=== END CRITICAL ERROR ===');
-            
+        } catch (error) {
             res.status(500).json({ 
                 success: false, 
-                message: 'Failed to load accounts from Google Sheets',
-                debug: {
-                    error: error.message,
-                    errorName: error.name,
-                    errorCode: error.code,
-                    stack: error.stack
-                }
+                message: 'Failed to load accounts from Google Sheets'
             });
         }
     });
