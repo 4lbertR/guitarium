@@ -727,6 +727,7 @@ function setupAppRoutes(app) {
                 };
             });
             res.json(userFutureJoins);
+            
         });
     
 
