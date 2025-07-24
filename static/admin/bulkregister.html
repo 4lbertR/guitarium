@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/admin/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Users</title>
+
+</head>
+<body>
+    <header>
+        <button onclick="window.location.href='/admin/index.html'">Tagasi</button>
+    </header>
+    <div class="container">
+        <h2>Register Users for Lessons</h2>
+        <label for="users">Select User:</label>
+        <select id="users"></select>
+        <div id="lessons-container" style="margin-top: 20px;"></div>
+        <button id="register-btn" onclick="registerForLessons()" style="margin-top: 20px; display: none;">Register for Selected Lessons</button>
+        <div id="message" style="margin-top: 20px;"></div>
+    </div>
+    <script>
+      async function checkAdminAccess() {
+        const jwtToken = localStorage.getItem('jwtToken');
+        if (!jwtToken) {window.location.href = '/';return;}
+        try {const response = await fetch('/api/isadmin', {headers: {'Authorization': `Bearer ${jwtToken}`}});
+            const data = await response.json();
+            if (!data.admin) {window.location.href = '/success.html';}
+        } catch (error) {localStorage.removeItem('jwtToken');window.location.href = '/';}
+      }
+      document.addEventListener('DOMContentLoaded', checkAdminAccess);
+    </script>
+    <script>
+      async function loadusers() {
+        const jwtToken = localStorage.getItem('jwtToken');
+        if (!jwtToken) {window.location.href = '/';return;}
+        const response = await fetch('/api/getusers', {
+              headers: {
+                'Authorization': `Bearer ${jwtToken}`
+              }
+            });
+            const users = await response.json();
+            const dropdown = document.getElementById('users');
+            dropdown.innerHTML = '<option value="">Select a user</option>';
+            users.sort((a, b) => a.localeCompare(b));
+            for (let i = 0; i < users.length; i++) {
+              const option = document.createElement('option');
+              option.value = users[i];
+              option.textContent = users[i];
+              dropdown.appendChild(option);
+            }
+      }
+      
+      document.getElementById('users').addEventListener('change', async function() {
+        const user = this.value;
+        const lessonsContainer = document.getElementById('lessons-container');
+        const registerBtn = document.getElementById('register-btn');
+        
+        if (user) {
+            try {
+              const response = await fetch(`/api/getuserlessons?user=${user}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
+                }
+              });
+              const lessons = await response.json();
+              
+              lessonsContainer.innerHTML = '<h3>Available Lessons:</h3>';
+              
+              lessons.forEach(lesson => {
+                const checkboxDiv = document.createElement('div');
+                checkboxDiv.style.marginBottom = '10px';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `lesson-${lesson.id}`;
+                checkbox.value = lesson.id;
+                
+                const label = document.createElement('label');
+                label.htmlFor = `lesson-${lesson.id}`;
+                label.textContent = lesson.name || `Lesson ${lesson.id}`;
+                label.style.marginLeft = '10px';
+                
+                checkboxDiv.appendChild(checkbox);
+                checkboxDiv.appendChild(label);
+                lessonsContainer.appendChild(checkboxDiv);
+              });
+              
+              registerBtn.style.display = 'block';
+              
+            } catch (error) {
+              console.error('Error fetching user lessons:', error);
+              lessonsContainer.innerHTML = '<p>Error loading lessons</p>';
+              registerBtn.style.display = 'none';
+            }
+        } else {
+            lessonsContainer.innerHTML = '';
+            registerBtn.style.display = 'none';
+        }
+      });
+
+      async function registerForLessons() {
+        const jwtToken = localStorage.getItem('jwtToken');
+        const user = document.getElementById('users').value;
+        const selectedLessons = Array.from(document.querySelectorAll('#lessons-container input[type="checkbox"]:checked'))
+            .map(checkbox => checkbox.value);
+        
+        if (!jwtToken || !user) {
+            alert('Please select a user and ensure you are logged in.');
+            return;
+        }
+        
+        if (selectedLessons.length === 0) {
+            alert('Please select at least one lesson.');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/registerforlesson', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${jwtToken}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ user, lessons: selectedLessons })
+            });
+            const result = await response.json();
+            alert(result.message);
+        } catch (error) {
+            console.error('Error registering for lessons:', error);
+            alert('Failed to register for lessons.');
+        }
+      }
+
+      
+      document.addEventListener('DOMContentLoaded', function() {
+        checkAdminAccess();
+        loadusers();
+      });
+
+    </script>
+</body>
+</html>

@@ -836,6 +836,116 @@ function setupAppRoutes(app) {
     app.get('/admin/editacc.html', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'editacc.html'));
     });
+    
+    app.get('/admin/bulkregister.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'static', 'admin', 'bulkregister.html'));
+    });
+
+    app.get('/api/getuserlessons', async(req, res) => {
+        const { user } = req.query;
+        
+        // Get user info
+        const db = await mysql.createConnection(DB_CONFIG);
+        const [userRows] = await db.execute('SELECT id, grupp FROM users WHERE fullname = ?', [user]);
+        await db.end();
+        
+        if (userRows.length === 0) {
+            return res.json([]);
+        }
+        
+        const userId = userRows[0].id;
+        const userGroup = userRows[0].grupp;
+        
+        // Get events from Google Calendar for this user's group
+        const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
+        const authClient = await auth.getClient();
+        const calendar = google.calendar({ version: 'v3', auth: authClient });
+
+        const now = new Date();
+        const result = await calendar.events.list({
+            calendarId,
+            maxResults: 100,
+            singleEvents: true,
+            orderBy: 'startTime',
+            timeMin: now.toISOString()
+        });
+
+        // Filter events for this user's group and format them
+        const lessons = (result.data.items || [])
+            .filter(event => event.summary === userGroup)
+            .map(event => {
+                const start = new Date(event.start?.dateTime);
+                const end = new Date(event.end?.dateTime);
+                const joined = (event.description || '')
+                    .split(/\s+/)
+                    .filter(x => /^\d+$/.test(x.trim()))
+                    .map(Number);
+                
+                return {
+                    id: event.id,
+                    name: `${start.getDate().toString().padStart(2, '0')}.${(start.getMonth() + 1).toString().padStart(2, '0')}.${start.getFullYear()} ${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}-${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`,
+                    isJoined: joined.includes(userId)
+                };
+            })
+            .filter(lesson => !lesson.isJoined); // Only show lessons user hasn't joined yet
+
+        res.json(lessons);
+    });
+
+    app.post('/api/registerforlesson', async(req, res) => {
+        const { user, lessons } = req.body;
+        
+        // Get user ID
+        const db = await mysql.createConnection(DB_CONFIG);
+        const [userRows] = await db.execute('SELECT id FROM users WHERE fullname = ?', [user]);
+        await db.end();
+        
+        if (userRows.length === 0) {
+            return res.status(400).json({ success: false, message: 'User not found' });
+        }
+        
+        const userId = userRows[0].id;
+        
+        // Register user for each selected lesson
+        const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
+        const authClient = await auth.getClient();
+        const calendar = google.calendar({ version: 'v3', auth: authClient });
+        
+        let successCount = 0;
+        let errorCount = 0;
+        
+        for (const eventId of lessons) {
+            try {
+                // Get current event
+                const res = await calendar.events.get({ calendarId, eventId });
+                let ids = (res.data.description || '')
+                    .split(/\s+/)
+                    .filter(x => /^\d+$/.test(x.trim()))
+                    .map(Number);
+                
+                // Add user if not already joined
+                if (!ids.includes(userId)) {
+                    ids.push(userId);
+                    const newDescription = ids.join('\n');
+                    
+                    await calendar.events.patch({
+                        calendarId,
+                        eventId,
+                        requestBody: { description: newDescription }
+                    });
+                    successCount++;
+                }
+            } catch (error) {
+                console.error('Error registering for lesson:', error);
+                errorCount++;
+            }
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `Successfully registered for ${successCount} lessons${errorCount > 0 ? `, ${errorCount} failed` : ''}` 
+        });
+    });
     app.get('/admin/registerforlesson.html', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'registerforlesson.html'));
     });
