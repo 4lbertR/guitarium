@@ -876,6 +876,11 @@ function setupAppRoutes(app) {
             .map(event => {
                 const start = new Date(event.start?.dateTime);
                 const end = new Date(event.end?.dateTime);
+                
+                // Convert to Estonian time (EEST/EET)
+                const estonianStart = new Date(start.toLocaleString("en-US", {timeZone: "Europe/Tallinn"}));
+                const estonianEnd = new Date(end.toLocaleString("en-US", {timeZone: "Europe/Tallinn"}));
+                
                 const joined = (event.description || '')
                     .split(/\s+/)
                     .filter(x => /^\d+$/.test(x.trim()))
@@ -883,7 +888,7 @@ function setupAppRoutes(app) {
                 
                 return {
                     id: event.id,
-                    name: `${start.getDate().toString().padStart(2, '0')}.${(start.getMonth() + 1).toString().padStart(2, '0')}.${start.getFullYear()} ${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}-${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`,
+                    name: `${estonianStart.getDate().toString().padStart(2, '0')}.${(estonianStart.getMonth() + 1).toString().padStart(2, '0')}.${estonianStart.getFullYear()} ${estonianStart.getHours().toString().padStart(2, '0')}:${estonianStart.getMinutes().toString().padStart(2, '0')}-${estonianEnd.getHours().toString().padStart(2, '0')}:${estonianEnd.getMinutes().toString().padStart(2, '0')}`,
                     isJoined: joined.includes(userId)
                 };
             })
