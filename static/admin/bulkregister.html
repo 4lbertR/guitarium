@@ -65,10 +65,10 @@
               });
               const lessons = await response.json();
               
-              lessonsContainer.innerHTML = '<h3>Saadaolevad tunnid:</h3>';
+              lessonsContainer.innerHTML = '<h3>Tunnid:</h3>';
               
               if (lessons.length === 0) {
-                lessonsContainer.innerHTML += '<p>Kõik tulevased tunnid on juba registreeritud.</p>';
+                lessonsContainer.innerHTML += '<p>Tulevasi tunde ei leitud.</p>';
                 registerBtn.style.display = 'none';
                 return;
               }
@@ -84,40 +84,27 @@
                 checkbox.id = `lesson-${lesson.id}`;
                 checkbox.value = lesson.id;
                 
+                // Check if lesson is already registered
+                const isRegistered = lesson.isJoined === true;
+                if (isRegistered) {
+                  checkbox.checked = true;
+                }
+                
                 const label = document.createElement('label');
                 label.htmlFor = `lesson-${lesson.id}`;
                 label.textContent = lesson.name || `Tund ${lesson.id}`;
                 label.style.marginLeft = '10px';
                 
+                // Style registered lessons differently
+                if (isRegistered) {
+                  label.style.color = '#28a745';
+                  label.style.fontWeight = 'bold';
+                }
+                
                 checkboxDiv.appendChild(checkbox);
                 checkboxDiv.appendChild(label);
                 lessonsContainer.appendChild(checkboxDiv);
               });
-              
-              // Now fetch and display already registered lessons
-              const registeredResponse = await fetch(`/api/getregisteredlessons?user=${user}`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
-                }
-              });
-              const registeredLessons = await registeredResponse.json();
-              
-              if (registeredLessons.length > 0) {
-                const registeredHeader = document.createElement('h3');
-                registeredHeader.textContent = 'Juba registreeritud tunnid:';
-                registeredHeader.style.marginTop = '20px';
-                lessonsContainer.appendChild(registeredHeader);
-                
-                registeredLessons.forEach(lesson => {
-                  const lessonDiv = document.createElement('div');
-                  lessonDiv.style.marginBottom = '5px';
-                  lessonDiv.style.padding = '5px';
-                  lessonDiv.style.backgroundColor = '#e8f5e8';
-                  lessonDiv.style.borderRadius = '3px';
-                  lessonDiv.textContent = `✓ ${lesson.name}`;
-                  lessonsContainer.appendChild(lessonDiv);
-                });
-              }
               
               registerBtn.style.display = 'block';
               

@@ -891,8 +891,7 @@ function setupAppRoutes(app) {
                     name: `${estonianStart.getDate().toString().padStart(2, '0')}.${(estonianStart.getMonth() + 1).toString().padStart(2, '0')}.${estonianStart.getFullYear()} ${estonianStart.getHours().toString().padStart(2, '0')}:${estonianStart.getMinutes().toString().padStart(2, '0')}-${estonianEnd.getHours().toString().padStart(2, '0')}:${estonianEnd.getMinutes().toString().padStart(2, '0')}`,
                     isJoined: joined.includes(userId)
                 };
-            })
-            .filter(lesson => !lesson.isJoined); // Only show lessons user hasn't joined yet
+            }); // Return ALL lessons, not just unjoined ones
 
         res.json(lessons);
     });
