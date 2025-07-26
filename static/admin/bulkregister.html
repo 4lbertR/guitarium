@@ -108,14 +108,16 @@
             .map(checkbox => checkbox.value);
         
         if (!jwtToken || !user) {
-            alert('Please select a user and ensure you are logged in.');
+            document.getElementById('message').textContent = 'Please select a user and ensure you are logged in.';
             return;
         }
         
         if (selectedLessons.length === 0) {
-            alert('Please select at least one lesson.');
+            document.getElementById('message').textContent = 'Please select at least one lesson.';
             return;
         }
+        
+        document.getElementById('message').textContent = 'Registering user for lessons...';
         
         try {
             const response = await fetch('/api/registerforlesson', {
@@ -127,10 +129,21 @@
               body: JSON.stringify({ user, lessons: selectedLessons })
             });
             const result = await response.json();
-            alert(result.message);
+            
+            if (result.success) {
+                document.getElementById('message').textContent = result.message;
+                document.getElementById('message').style.color = 'green';
+                
+                // Refresh the lesson list to show updated availability
+                document.getElementById('users').dispatchEvent(new Event('change'));
+            } else {
+                document.getElementById('message').textContent = result.message || 'Registration failed';
+                document.getElementById('message').style.color = 'red';
+            }
         } catch (error) {
             console.error('Error registering for lessons:', error);
-            alert('Failed to register for lessons.');
+            document.getElementById('message').textContent = 'Failed to register for lessons.';
+            document.getElementById('message').style.color = 'red';
         }
       }
 
