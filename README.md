@@ -16,3 +16,33 @@ At the moment a person can't be a member of 2 groups.
 Ps. This can not be bypassed by creating another user with the same full name but different password/group. 
 
 Pps. Only the first account registered under a name will work.
+
+
+For setup, you will need:
+
+1. A server to deploy the script to
+2. Caprover or some similar one-click-app installer
+3. A mySQL database (Can be installed from caprover)
+
+On how to install caprover:
+https://caprover.com/docs/get-started.html
+
+After installing Caprover:
+go to captain.something.mydomain.com
+
+Log in with your credentials
+
+Click on one-click-apps
+
+![IMG_0095](https://github.com/user-attachments/assets/24d86f13-ad56-4191-9072-9347d08d58bc)
+Search PhpMyAdmin
+Set it up
+Click on one-click-apps
+Search MySql
+Set it up
+
+Create an empty app
+![IMG_0096](https://github.com/user-attachments/assets/61c9448d-5a4d-422a-a588-035b7bbd939e)
+Name it the name you want it to be
+
+
