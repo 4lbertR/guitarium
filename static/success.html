@@ -205,13 +205,11 @@
            document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
         }
 
-
-
         //
         document.getElementById('myText').textContent = `Tulemas: ${future.length}, Möödunud: ${past.length}`;
 
-        const render = (target, list, isFuture = false) => {
-          list.forEach(event => {
+        const render = async (target, list, isFuture = false) => {
+          for (const event of list) {
             const [year, month, day, start, end, eventId, joined] = event;
             let hasJoined = joined.includes(userId);
 
@@ -267,7 +265,6 @@
                       document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
                     }
 
-
                     const existingIcon = summary.querySelector('.lesson-checkmark-icon'); // Corrected typo
                     if (hasJoined) {
                         if (!existingIcon) {
@@ -283,13 +280,8 @@
                         }
                     }
 
-                    const participantsRes = await fetch('/api/getParticipants?eventId=' + eventId, {
-                      headers: {
-                        'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT
-                      }
-                    });
-                    const participants = await participantsRes.json();
-                    p.textContent = 'Osalejad: ' + participants.map(x => x.fullname).join(', ');
+                    // Re-fetch participants and update display
+                    await updateParticipantsDisplay(eventId, p, group, config);
 
                   } else {
                     errorMsg.textContent =
@@ -316,29 +308,53 @@
             }
 
             // Initial fetch of participants for this event when the page loads
-            fetch('/api/getParticipants?eventId=' + eventId, {
-              headers: {
-                'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT
-              }
-            })
-              .then(res => res.json())
-              .then(participants => {
-                p.textContent = 'Osalejad: ' + participants.map(x => x.fullname).join(', ');
-              })
-              .catch(err => {
-                console.error('Error fetching initial participants for event ' + eventId, err);
-                p.textContent = 'Osalejate laadimisel tekkis viga.';
-              });
+            await updateParticipantsDisplay(eventId, p, group, config);
 
             details.appendChild(body);
             const wrapper = document.createElement('li');
             wrapper.appendChild(details);
             target.appendChild(wrapper);
-          });
+          }
         };
 
-        render(document.getElementById('eventList'), future, true);
-        render(document.getElementById('pastEventList'), past);
+        // Helper function to update participants display with count
+        async function updateParticipantsDisplay(eventId, paragraphElement, userGroup, config) {
+          try {
+            const participantsRes = await fetch('/api/getParticipants?eventId=' + eventId, {
+              headers: {
+                'Authorization': `Bearer ${jwtToken}`
+              }
+            });
+            const result = await participantsRes.json();
+            
+            // Handle both old and new response formats
+            const participants = result.participants || result || [];
+            const maxParticipants = result.max !== undefined ? result.max : (config[userGroup]?.max || Infinity);
+            const currentCount = participants.length;
+            
+            let displayText = '';
+            if (maxParticipants !== Infinity) {
+              displayText = `${currentCount}/${maxParticipants} inimest on liitunud tunniga:\n`;
+            } else {
+              displayText = `${currentCount} inimest on liitunud tunniga:\n`;
+            }
+            
+            if (participants.length > 0) {
+              displayText += participants.map(x => x.fullname).join('\n');
+            } else {
+              displayText += 'Keegi pole veel liitunud';
+            }
+            
+            paragraphElement.style.whiteSpace = 'pre-line';
+            paragraphElement.textContent = displayText;
+          } catch (err) {
+            console.error('Error fetching participants for event ' + eventId, err);
+            paragraphElement.textContent = 'Osalejate laadimisel tekkis viga.';
+          }
+        }
+
+        await render(document.getElementById('eventList'), future, true);
+        await render(document.getElementById('pastEventList'), past);
 
       } catch (error) {
         console.error('Error initializing page:', error);
@@ -352,3 +368,4 @@
   </script>
 </body>
 </html>
+``` 

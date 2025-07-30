@@ -196,13 +196,6 @@ async function join(eventId, userId) {
     await db.end();
 
     const max = config[group]?.max || Infinity;
-    let ic = false;
-    let ofEnabled = false;
-    
-    if (group in config){
-        ofEnabled = config[group]?.of === true;
-        ic = true;
-    }
 
     const userFutureJoins = (allEvents.data.items || []).filter(event => {
         const joined = (event.description || '')
@@ -213,10 +206,17 @@ async function join(eventId, userId) {
         return start && joined.includes(userId) && start > new Date();
     }).length;
     
-    if(ic && !ofEnabled && userFutureJoins >= max) {
+    if (userFutureJoins >= max) {
         return { success: false, reason: 'overflow'  };
     }
+
     const res = await calendar.events.get({ calendarId, eventId });
+    const event = res.data;
+    
+    // Get the lesson group from the event summary
+    const lessonGroup = event.summary;
+    const lessonMax = config[lessonGroup]?.max || Infinity;
+    
     let ids = (res.data.description || '')
         .split(/\s+/)
         .filter(x => /^\d+$/.test(x.trim()))
@@ -225,7 +225,9 @@ async function join(eventId, userId) {
     if (ids.includes(userId)) {
         return { success: true };
     }
-    if (ids.length >= max) {
+    
+    // Check if the lesson is already at capacity
+    if (ids.length >= lessonMax) {
         return { success: false, reason: 'full' };
     }
 
@@ -285,7 +287,7 @@ async function leave(eventId, userId) {
 async function getParticipants(eventId) {
     if (typeof eventId !== 'string') {
         console.error('Error: eventId is not a string in getParticipants function!', eventId);
-        return [];
+        return { participants: [], max: 0, group: '' };
     }
 
     const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
@@ -293,13 +295,17 @@ async function getParticipants(eventId) {
     const calendar = google.calendar({ version: 'v3', auth: authClient });
 
     const res = await calendar.events.get({ calendarId, eventId });
+    const event = res.data;
+    const lessonGroup = event.summary;
+    const lessonMax = config[lessonGroup]?.max || Infinity;
+    
     const ids = (res.data.description || '')
         .split(/\s+/)
         .filter(x => /^\d+$/.test(x.trim()))
         .map(Number);
 
     if (ids.length === 0) {
-        return [];
+        return { participants: [], max: lessonMax, group: lessonGroup };
     }
 
     const db = await mysql.createConnection(DB_CONFIG);
@@ -309,10 +315,12 @@ async function getParticipants(eventId) {
     );
     await db.end();
 
-    return rows.map(row => {
+    const participants = rows.map(row => {
         const trimmed = row.fullname.replace(/(^\S+)\s(\S)\S*/, '$1 $2');
         return { fullname: trimmed };
     });
+
+    return { participants, max: lessonMax, group: lessonGroup };
 }
 
 function setupAppRoutes(app) {
@@ -418,14 +426,14 @@ function setupAppRoutes(app) {
     app.get('/api/getParticipants', async(req, res) => {
         const { eventId } = req.query;
         if (!eventId) {
-            return res.status(400).json([]);
+            return res.status(400).json({ participants: [], max: 0, group: '' });
         }
         try {
-            const participants = await getParticipants(eventId);
-            res.json(participants);
+            const result = await getParticipants(eventId);
+            res.json(result);
         } catch (err) {
             console.error('Participant fetch failed:', err.message);
-            res.status(500).json([]);
+            res.status(500).json({ participants: [], max: 0, group: '' });
         }
     });
 
