@@ -967,7 +967,7 @@ function setupAppRoutes(app) {
         
         // Get user ID
         const db = await mysql.createConnection(DB_CONFIG);
-        const [userRows] = await db.execute('SELECT id FROM users WHERE fullname = ?', [user]);
+        const [userRows] = await db.execute('SELECT id, grupp FROM users WHERE fullname = ?', [user]);
         await db.end();
         
         if (userRows.length === 0) {
@@ -975,45 +975,90 @@ function setupAppRoutes(app) {
         }
         
         const userId = userRows[0].id;
+        const userGroup = userRows[0].grupp;
         
         // Register user for each selected lesson
         const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
         const authClient = await auth.getClient();
         const calendar = google.calendar({ version: 'v3', auth: authClient });
         
+        // Get all events to check user's current future registrations
+        const allEvents = await calendar.events.list({
+            calendarId,
+            maxResults: 100,
+            singleEvents: true,
+            orderBy: 'startTime'
+        });
+
+        const userMax = config[userGroup]?.max || Infinity;
+        const userFutureJoins = (allEvents.data.items || []).filter(event => {
+            const joined = (event.description || '')
+                .split(/\s+/)
+                .filter(x => /^\d+$/.test(x.trim()))
+                .map(Number);
+            const start = event.start?.dateTime ? new Date(event.start.dateTime) : null;
+            return start && joined.includes(userId) && start > new Date();
+        }).length;
+        
         let successCount = 0;
         let errorCount = 0;
+        let errorMessages = [];
         
         for (const eventId of lessons) {
             try {
                 // Get current event
                 const res = await calendar.events.get({ calendarId, eventId });
-                let ids = (res.data.description || '')
+                const event = res.data;
+                
+                // Get the lesson group from the event summary
+                const lessonGroup = event.summary;
+                const lessonMax = config[lessonGroup]?.max || Infinity;
+                
+                let ids = (event.description || '')
                     .split(/\s+/)
                     .filter(x => /^\d+$/.test(x.trim()))
                     .map(Number);
                 
-                // Add user if not already joined
-                if (!ids.includes(userId)) {
-                    ids.push(userId);
-                    const newDescription = ids.join('\n');
-                    
-                    await calendar.events.patch({
-                        calendarId,
-                        eventId,
-                        requestBody: { description: newDescription }
-                    });
-                    successCount++;
+                // Check if user is already registered
+                if (ids.includes(userId)) {
+                    continue; // Skip if already registered
                 }
+                
+                // Check if lesson is at capacity
+                if (ids.length >= lessonMax) {
+                    errorCount++;
+                    errorMessages.push(`Lesson ${eventId} is full`);
+                    continue;
+                }
+                
+                // Check if user would exceed their personal limit 
+                if (userFutureJoins + successCount >= userMax) {
+                    errorCount++;
+                    errorMessages.push(`User would exceed personal limit of ${userMax} lessons`);
+                    continue;
+                }
+                
+                // Add user to lesson
+                ids.push(userId);
+                const newDescription = ids.join('\n');
+                
+                await calendar.events.patch({
+                    calendarId,
+                    eventId,
+                    requestBody: { description: newDescription }
+                });
+                successCount++;
             } catch (error) {
                 console.error('Error registering for lesson:', error);
                 errorCount++;
+                errorMessages.push(`Error with lesson ${eventId}: ${error.message}`);
             }
         }
         
         res.json({ 
             success: true, 
-            message: `Successfully registered for ${successCount} lessons${errorCount > 0 ? `, ${errorCount} failed` : ''}` 
+            message: `Successfully registered for ${successCount} lessons${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
+            errors: errorMessages
         });
     });
     app.get('/admin/registerforlesson.html', (req, res) => {
