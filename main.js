@@ -1004,7 +1004,7 @@ function setupAppRoutes(app) {
         let errorCount = 0;
         let errorMessages = [];
         
-        for (const eventId of lessons) {
+        for (const eventId of lessons) { 
             try {
                 // Get current event
                 const res = await calendar.events.get({ calendarId, eventId });
@@ -1032,7 +1032,7 @@ function setupAppRoutes(app) {
                 }
                 
                 // Check if user would exceed their personal limit 
-                
+
                 if (userFutureJoins + successCount >= userMax) {
                     errorCount++;
                     errorMessages.push(`User would exceed personal limit of ${userMax} lessons`);
