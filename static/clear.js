@@ -23,7 +23,7 @@ const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 
   console.log('Fetching all events...');
   const all = await calendar.events.list({
-    calendarId,
+    calendarId, 
     showDeleted: false,
     singleEvents: false,
     maxResults: 2500
