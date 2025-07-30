@@ -183,33 +183,7 @@ async function join(eventId, userId) {
     const authClient = await auth.getClient();
     const calendar = google.calendar({ version: 'v3', auth: authClient });
 
-    const allEvents = await calendar.events.list({
-        calendarId,
-        maxResults: 100,
-        singleEvents: true,
-        orderBy: 'startTime'
-    });
-
-    const db = await mysql.createConnection(DB_CONFIG);
-    const [rows] = await db.execute('SELECT grupp FROM users WHERE id = ?', [userId]);
-    const group = rows[0]?.grupp;
-    await db.end();
-
-    const max = config[group]?.max || Infinity;
-
-    const userFutureJoins = (allEvents.data.items || []).filter(event => {
-        const joined = (event.description || '')
-            .split(/\s+/)
-            .filter(x => /^\d+$/.test(x.trim()))
-            .map(Number);
-        const start = event.start?.dateTime ? new Date(event.start.dateTime) : null;
-        return start && joined.includes(userId) && start > new Date();
-    }).length;
-    
-    if (userFutureJoins >= max) {
-        return { success: false, reason: 'overflow'  };
-    }
-
+    // Get the specific event first to check its group and current participants
     const res = await calendar.events.get({ calendarId, eventId });
     const event = res.data;
     
@@ -217,7 +191,7 @@ async function join(eventId, userId) {
     const lessonGroup = event.summary;
     const lessonMax = config[lessonGroup]?.max || Infinity;
     
-    let ids = (res.data.description || '')
+    let ids = (event.description || '')
         .split(/\s+/)
         .filter(x => /^\d+$/.test(x.trim()))
         .map(Number);
@@ -229,6 +203,34 @@ async function join(eventId, userId) {
     // Check if the lesson is already at capacity
     if (ids.length >= lessonMax) {
         return { success: false, reason: 'full' };
+    }
+
+    // Check user's personal limit (how many future lessons they can join)
+    const allEvents = await calendar.events.list({
+        calendarId,
+        maxResults: 100,
+        singleEvents: true,
+        orderBy: 'startTime'
+    });
+
+    const db = await mysql.createConnection(DB_CONFIG);
+    const [rows] = await db.execute('SELECT grupp FROM users WHERE id = ?', [userId]);
+    const userGroup = rows[0]?.grupp;
+    await db.end();
+
+    const userMax = config[userGroup]?.max || Infinity;
+
+    const userFutureJoins = (allEvents.data.items || []).filter(event => {
+        const joined = (event.description || '')
+            .split(/\s+/)
+            .filter(x => /^\d+$/.test(x.trim()))
+            .map(Number);
+        const start = event.start?.dateTime ? new Date(event.start.dateTime) : null;
+        return start && joined.includes(userId) && start > new Date();
+    }).length;
+    
+    if (userFutureJoins >= userMax) {
+        return { success: false, reason: 'overflow' };
     }
 
     ids.push(userId);
@@ -1023,3 +1025,4 @@ function setupAppRoutes(app) {
 }
 
 module.exports = { success: setupAppRoutes };
+``` 

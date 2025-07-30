@@ -336,13 +336,13 @@
             if (maxParticipants !== Infinity) {
               displayText = `${currentCount}/${maxParticipants} inimest on liitunud tunniga:\n`;
             } else {
-              displayText = `${currentCount} inimest on liitunud tunniga:\n`;
+              displayText = `${currentCount} inimest on liitunud tunniga\n`;
             }
             
             if (participants.length > 0) {
               displayText += participants.map(x => x.fullname).join('\n');
             } else {
-              displayText += 'Keegi pole veel liitunud';
+              displayText += '';
             }
             
             paragraphElement.style.whiteSpace = 'pre-line';
