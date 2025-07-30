@@ -1025,4 +1025,3 @@ function setupAppRoutes(app) {
 }
 
 module.exports = { success: setupAppRoutes };
-``` 
