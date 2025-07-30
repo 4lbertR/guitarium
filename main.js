@@ -117,7 +117,12 @@ async function listEvents(groupFilter) {
         const end = event.end?.dateTime;
         const desc = event.summary;
         const eventId = event.id;
-        const joined = (event.description || '')
+        const eventDescription = event.description || '';
+        
+        // Check if event is cancelled
+        const isCancelled = eventDescription.trim() === 'TÜHISTATUD';
+        
+        const joined = isCancelled ? [] : eventDescription
             .split(/\s+/)
             .filter(x => /^\d+$/.test(x.trim()))
             .map(Number);
@@ -131,7 +136,8 @@ async function listEvents(groupFilter) {
             start.slice(11, 16),
             end.slice(11, 16),
             eventId,
-            joined
+            joined,
+            isCancelled
         ];
 
         const startTime = new Date(start);
@@ -300,8 +306,14 @@ async function getParticipants(eventId) {
     const event = res.data;
     const lessonGroup = event.summary;
     const lessonMax = config[lessonGroup]?.max || Infinity;
+    const eventDescription = event.description || '';
     
-    const ids = (res.data.description || '')
+    // Check if event is cancelled
+    if (eventDescription.trim() === 'TÜHISTATUD') {
+        return { cancelled: true, participants: [], max: lessonMax, group: lessonGroup };
+    }
+    
+    const ids = eventDescription
         .split(/\s+/)
         .filter(x => /^\d+$/.test(x.trim()))
         .map(Number);
@@ -428,10 +440,13 @@ function setupAppRoutes(app) {
     app.get('/api/getParticipants', async(req, res) => {
         const { eventId } = req.query;
         if (!eventId) {
-            return res.status(400).json({ participants: [], max: 0, group: '' });
+            return res.status(400).json({ cancelled: false, participants: [], max: 0, group: '' });
         }
         try {
             const result = await getParticipants(eventId);
+            if (result == "TÜHISTATUD") {
+                return res.json({ cancelled: true, participants: [], max: 0, group: '' });
+            }
             res.json(result);
         } catch (err) {
             console.error('Participant fetch failed:', err.message);
