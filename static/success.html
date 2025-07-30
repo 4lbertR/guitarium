@@ -2,8 +2,9 @@
 <html lang="et">
 <head>
   <meta charset="UTF-8" />
-  <title>Sündmused</title>
+  <title data-translate="events_title">Sündmused</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="translations.js"></script>
   <style>
     /* Override or adjust styles from styles.css */
     body {
@@ -119,19 +120,19 @@
 <body>
 
   <header>
-    <button onclick="logout()">Logi välja</button>
+    <button onclick="logout()" data-translate="logout_button">Logi välja</button>
   </header>
 
   <h3 id="fixedInfo"></h3>
 
-  <h1>Järgmised tunnid:</h1>
+  <h1 data-translate="next_lessons_heading">Järgmised tunnid:</h1>
   <p id="joinedCount"></p>
   <ul id="eventList"></ul>
 
-  <h1>Möödunud tunnid:</h1>
+  <h1 data-translate="past_lessons_heading">Möödunud tunnid:</h1>
   <ul id="pastEventList"></ul>
 
-  <p id="myText">Laen...</p>
+  <p id="myText" data-translate="loading">Laen...</p>
 
   <script>
     // Get the JWT token from localStorage
@@ -139,13 +140,20 @@
 
     function logout() {
       localStorage.removeItem('jwtToken'); // NEW: Remove JWT from localStorage
-      window.location.href = '/'; // Redirect to login page
+      // Preserve language parameter when redirecting
+      const urlParams = new URLSearchParams(window.location.search);
+      const lang = urlParams.get('lang');
+      const loginUrl = lang ? `/?lang=${lang}` : '/';
+      window.location.href = loginUrl; // Redirect to login page
     }
 
     async function initializePage() {
       // If no token, redirect to login
       if (!jwtToken) {
-        window.location.href = '/';
+        const urlParams = new URLSearchParams(window.location.search);
+        const lang = urlParams.get('lang');
+        const loginUrl = lang ? `/?lang=${lang}` : '/';
+        window.location.href = loginUrl;
         return;
       }
 
@@ -164,7 +172,10 @@
         if (!meResponse.ok) {
           // If token is invalid or expired (e.g., 401/403 response), redirect to login
           localStorage.removeItem('jwtToken'); // Clear invalid token
-          window.location.href = '/';
+          const urlParams = new URLSearchParams(window.location.search);
+          const lang = urlParams.get('lang');
+          const loginUrl = lang ? `/?lang=${lang}` : '/';
+          window.location.href = loginUrl;
           return;
         }
         const me = await meResponse.json();
@@ -200,15 +211,15 @@
         let howmany = 0;
         howmany = future.filter(e => e[6].includes(userId)).length;
         if(displaymax.ic){
-           document.getElementById('fixedInfo').innerHTML = `Sinu grupp on ${group}<br>Oled liitunud ${howmany}/${displaymax.max} tunniga`;
+           document.getElementById('fixedInfo').innerHTML = `${t('your_group')} ${group}<br>${t('joined_lessons')} ${howmany}/${displaymax.max} ${t('max_lessons')}`;
         } else {
-           document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
+           document.getElementById('fixedInfo').textContent = `${t('your_group')} ${group}`;
         }
 
 
 
         //
-        document.getElementById('myText').textContent = `Tulemas: ${future.length}, Möödunud: ${past.length}`;
+        document.getElementById('myText').textContent = `${t('upcoming')} ${future.length}, ${t('past')} ${past.length}`;
 
         const render = (target, list, isFuture = false) => {
           list.forEach(event => {
@@ -239,14 +250,14 @@
 
             if (isFuture) {
               const btn = document.createElement('button');
-              btn.textContent = hasJoined ? 'Loobu' : 'Liitu';
+              btn.textContent = hasJoined ? t('leave_button') : t('join_button');
               const errorMsg = document.createElement('p');
               errorMsg.className = 'error-msg';
               errorMsg.style.display = 'none';
 
               btn.onclick = async () => { // Changed to async function
                 btn.disabled = true;
-                const action = btn.textContent === 'Liitu' ? 'join' : 'leave';
+                const action = btn.textContent === t('join_button') ? 'join' : 'leave';
                 try {
                   const res = await fetch(`/api/${action}?eventId=${eventId}`, {
                     headers: {
@@ -259,12 +270,12 @@
                   if (result.success) {
                     hasJoined = !hasJoined;
                     details.classList.toggle('joined');
-                    btn.textContent = hasJoined ? 'Loobu' : 'Liitu';
+                    btn.textContent = hasJoined ? t('leave_button') : t('join_button');
                     howmany += hasJoined ? 1 : -1;;
                     if(displaymax.ic){
-                      document.getElementById('fixedInfo').innerHTML = `Sinu grupp on ${group}<br>Oled liitunud ${howmany}/${displaymax.max} tunniga`;
+                      document.getElementById('fixedInfo').innerHTML = `${t('your_group')} ${group}<br>${t('joined_lessons')} ${howmany}/${displaymax.max} ${t('max_lessons')}`;
                     } else {
-                      document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
+                      document.getElementById('fixedInfo').textContent = `${t('your_group')} ${group}`;
                     }
 
 
@@ -289,22 +300,22 @@
                       }
                     });
                     const participants = await participantsRes.json();
-                    p.textContent = 'Osalejad: ' + participants.map(x => x.fullname).join(', ');
+                    p.textContent = t('participants') + ' ' + participants.map(x => x.fullname).join(', ');
 
                   } else {
                     errorMsg.textContent =
                       result.reason === 'too_late'
-                        ? 'Ei saa loobuda vähem kui 24h enne algust.'
+                        ? t('too_late_error')
                         : result.reason === 'overflow'
-                          ? 'Sa oled liitunud maksimaalse arvu tunniga'
+                          ? t('overflow_error')
                           : result.reason === 'full'
-                            ? 'Tund on täis.'
-                            : 'Toiming ebaõnnestus.';
+                            ? t('full_error')
+                            : t('action_failed');
                     errorMsg.style.display = 'block';
                   }
                 } catch (err) {
                   console.error('Fetch error:', err);
-                  errorMsg.textContent = 'Võrguviga või serveri viga.';
+                  errorMsg.textContent = t('network_error');
                   errorMsg.style.display = 'block';
                 } finally {
                   btn.disabled = false;
@@ -323,11 +334,11 @@
             })
               .then(res => res.json())
               .then(participants => {
-                p.textContent = 'Osalejad: ' + participants.map(x => x.fullname).join(', ');
+                p.textContent = t('participants') + ' ' + participants.map(x => x.fullname).join(', ');
               })
               .catch(err => {
                 console.error('Error fetching initial participants for event ' + eventId, err);
-                p.textContent = 'Osalejate laadimisel tekkis viga.';
+                p.textContent = t('participants_error');
               });
 
             details.appendChild(body);
@@ -343,8 +354,11 @@
       } catch (error) {
         console.error('Error initializing page:', error);
         localStorage.removeItem('jwtToken'); // Clear token if initialization fails
-        window.location.href = '/'; // Redirect to login
-        document.getElementById('myText').textContent = '❌ Viga sündmuste laadimisel';
+        const urlParams = new URLSearchParams(window.location.search);
+        const lang = urlParams.get('lang');
+        const loginUrl = lang ? `/?lang=${lang}` : '/';
+        window.location.href = loginUrl; // Redirect to login
+        document.getElementById('myText').textContent = t('events_load_error');
       }
     }
 

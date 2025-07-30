@@ -4,24 +4,25 @@
     <link rel="stylesheet" href="../styles.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel</title>
+    <title data-translate="admin_title">Admin Panel</title>
+    <script src="../translations.js"></script>
 </head>
 <body>
 
     <form action="/admin/createacc.html">
-        <button>Loo konto</button>
+        <button data-translate="create_account">Loo konto</button>
     </form>
         <form action="/admin/editacc.html">
-        <button>Muuda kasutaja andmeid</button>
+        <button data-translate="edit_user">Muuda kasutaja andmeid</button>
     </form>
     <form action="/admin/createlesson.html">
-        <button>Lisa tund</button>
+        <button data-translate="add_lesson">Lisa tund</button>
     </form>
     <form action="/admin/delgroup.html">
-        <button>Kustuta grupp</button>
+        <button data-translate="delete_group">Kustuta grupp</button>
     </form>
     <form action="/admin/bulkadd.html">
-        <button>Impotri google sheetsist</button>
+        <button data-translate="import_sheets">Impotri google sheetsist</button>
     </form>
 
     <script>
@@ -29,7 +30,11 @@
             const jwtToken = localStorage.getItem('jwtToken');
 
             if (!jwtToken) {
-                window.location.href = '/';
+                // Preserve language parameter when redirecting
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang');
+                const loginUrl = lang ? `/?lang=${lang}` : '/';
+                window.location.href = loginUrl;
                 return;
             }
 
@@ -41,12 +46,20 @@
                 });
                 const data = await response.json();
                 if (!data.admin) {
-                    window.location.href = '/success.html';
+                    // Preserve language parameter when redirecting
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const lang = urlParams.get('lang');
+                    const successUrl = lang ? `/success.html?lang=${lang}` : '/success.html';
+                    window.location.href = successUrl;
                 }
             } catch (error) {
                 console.error('Error checking admin status:', error);
                 localStorage.removeItem('jwtToken');
-                window.location.href = '/';
+                // Preserve language parameter when redirecting
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang');
+                const loginUrl = lang ? `/?lang=${lang}` : '/';
+                window.location.href = loginUrl;
             }
         }
 

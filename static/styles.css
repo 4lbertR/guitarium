@@ -237,6 +237,62 @@ label {
     text-transform: uppercase;
 }
 
+/* Language Selector Styles */
+.language-selector {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ddd;
+    z-index: 1000;
+    font-size: 14px;
+}
+
+.language-selector label {
+    margin: 0;
+    margin-right: 8px;
+    font-weight: normal;
+    color: #7c1f59;
+    text-transform: none;
+    font-size: 14px;
+    display: inline;
+}
+
+.language-selector select {
+    max-width: 80px;
+    padding: 4px 8px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    margin: 0;
+    display: inline;
+}
+
+.language-selector select:hover {
+    border-color: #7c1f59;
+    box-shadow: 0 1px 4px rgba(124, 31, 89, 0.1);
+}
+
+.language-selector select:focus {
+    outline: none;
+    border-color: #7c1f59;
+    box-shadow: 0 0 0 2px rgba(124, 31, 89, 0.2);
+}
+
+/* For pages with header, integrate language selector */
+header .language-selector {
+    position: static;
+    background: none;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    margin-left: auto;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .container {
@@ -251,5 +307,16 @@ label {
     button {
         width: 100%;
         margin: 8px 0;
+    }
+    
+    .language-selector {
+        top: 10px;
+        right: 10px;
+        font-size: 12px;
+    }
+    
+    .language-selector select {
+        max-width: 70px;
+        font-size: 12px;
     }
 }

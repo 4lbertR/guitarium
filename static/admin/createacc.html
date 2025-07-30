@@ -4,39 +4,50 @@
     <link rel="stylesheet" href="/admin/styles.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Account</title>
-
+    <title data-translate="create_account">Create Account</title>
+    <script src="../translations.js"></script>
 </head>
 <body>
       <header>
-            <button onclick="window.location.href='/admin/index.html'">Tagasi</button>
+            <button onclick="goBackToAdmin()" data-translate="back_button">Tagasi</button>
         </header>
     <div class="container">
-        <h2>Lisa uus kasutaja</h2>
+        <h2 data-translate="create_new_user">Lisa uus kasutaja</h2>
         <form id="createAccountForm">
             <div class="form-group">
-                <label for="fullname">Ees- ja perekonnanimi:</label>
+                <label for="fullname" data-translate="fullname_label">Ees- ja perekonnanimi:</label>
                 <input type="text" id="fullname" required>
             </div>
             <div class="form-group">
-                <label for="password">Parool:</label>
+                <label for="password" data-translate="password_label">Parool:</label>
                 <input type="text" id="password" required>
             </div>
             <div class="form-group">
-                <label for="group">Kasutaja grupp (nt E1, B2):</label>
+                <label for="group" data-translate="group_label">Kasutaja grupp (nt E1, B2):</label>
                 <input type="text" id="group" required>
             </div>
-            <button type="submit">Loo konto</button>
+            <button type="submit" data-translate="create_account_button">Loo konto</button>
         </form>
         <div id="message"></div>
     </div>
 
     <script>
+        function goBackToAdmin() {
+            // Preserve language parameter when going back
+            const urlParams = new URLSearchParams(window.location.search);
+            const lang = urlParams.get('lang');
+            const adminUrl = lang ? `/admin/index.html?lang=${lang}` : '/admin/index.html';
+            window.location.href = adminUrl;
+        }
+
         async function checkAdminAccess() {
             const jwtToken = localStorage.getItem('jwtToken');
 
             if (!jwtToken) {
-                window.location.href = '/';
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang');
+                const loginUrl = lang ? `/?lang=${lang}` : '/';
+                window.location.href = loginUrl;
                 return;
             }
 
@@ -50,12 +61,18 @@
                 const data = await response.json();
 
                 if (!data.admin) {
-                    window.location.href = '/success.html';
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const lang = urlParams.get('lang');
+                    const successUrl = lang ? `/success.html?lang=${lang}` : '/success.html';
+                    window.location.href = successUrl;
                 }
             } catch (error) {
                 console.error('Error checking admin status:', error);
                 localStorage.removeItem('jwtToken');
-                window.location.href = '/';
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang');
+                const loginUrl = lang ? `/?lang=${lang}` : '/';
+                window.location.href = loginUrl;
             }
         }
 
@@ -85,18 +102,18 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    messageDiv.textContent = result.message;
+                    messageDiv.textContent = result.message || t('success_message');
                     messageDiv.classList.add('success');
                     document.getElementById('fullname').value = '';
                     document.getElementById('password').value = '';
                     document.getElementById('group').value = '';
                 } else {
-                    messageDiv.textContent = result.message || 'An unknown error occurred.';
+                    messageDiv.textContent = result.message || t('error_message');
                     messageDiv.classList.add('error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                messageDiv.textContent = 'Network error or server unreachable.';
+                messageDiv.textContent = t('network_error_message');
                 messageDiv.classList.add('error');
             } finally {
                 messageDiv.style.display = 'block';

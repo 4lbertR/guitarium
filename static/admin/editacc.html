@@ -4,46 +4,78 @@
     <link rel="stylesheet" href="/admin/styles.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Account</title>
-
+    <title data-translate="edit_user">Edit User Data</title>
+    <script src="../translations.js"></script>
 </head>
 <body>
       <header>
-            <button onclick="window.location.href='/admin/index.html'">Tagasi</button>
+            <button onclick="goBackToAdmin()" data-translate="back_button">Tagasi</button>
         </header>
     <div class="container">
         <select id="users"></select>
         <div class="form-group">
-            <label for="fullname">Ees- ja perekonnanimi:</label>
+            <label for="fullname" data-translate="fullname_label">Ees- ja perekonnanimi:</label>
             <input type="text" id="fullname" required>
-            <label for="password">Parool:</label>
+            <label for="password" data-translate="password_label">Parool:</label>
             <input type="text" id="password">
-            <label for="group">Kasutaja grupp (nt E1, B2):</label>
+            <label for="group" data-translate="group_label">Kasutaja grupp (nt E1, B2):</label>
             <input type="text" id="group" required>
 
         </div>
 
 
 
-        <button id="changedatabutton">Muuda kasutaja andmeid</button>
-        <button id="deleteGroupButton">Kustuta kasutaja</button>
+        <button id="changedatabutton" data-translate="edit_user_data">Muuda kasutaja andmeid</button>
+        <button id="deleteGroupButton" data-translate="delete_user">Kustuta kasutaja</button>
         <div id="message"></div>
     </div>
     
     <script>
+        function goBackToAdmin() {
+            // Preserve language parameter when going back
+            const urlParams = new URLSearchParams(window.location.search);
+            const lang = urlParams.get('lang');
+            const adminUrl = lang ? `/admin/index.html?lang=${lang}` : '/admin/index.html';
+            window.location.href = adminUrl;
+        }
+
         async function checkAdminAccess() {
             const jwtToken = localStorage.getItem('jwtToken');
-            if (!jwtToken) {window.location.href = '/';return;}
-            try {const response = await fetch('/api/isadmin', {headers: {'Authorization': `Bearer ${jwtToken}`}});
+            if (!jwtToken) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang');
+                const loginUrl = lang ? `/?lang=${lang}` : '/';
+                window.location.href = loginUrl;
+                return;
+            }
+            try {
+                const response = await fetch('/api/isadmin', {headers: {'Authorization': `Bearer ${jwtToken}`}});
                 const data = await response.json();
-                if (!data.admin) {window.location.href = '/success.html';}
-            } catch (error) {localStorage.removeItem('jwtToken');window.location.href = '/';}
+                if (!data.admin) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const lang = urlParams.get('lang');
+                    const successUrl = lang ? `/success.html?lang=${lang}` : '/success.html';
+                    window.location.href = successUrl;
+                }
+            } catch (error) {
+                localStorage.removeItem('jwtToken');
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang');
+                const loginUrl = lang ? `/?lang=${lang}` : '/';
+                window.location.href = loginUrl;
+            }
         }
     </script>
     <script>
         async function loadusers() {
             const jwtToken = localStorage.getItem('jwtToken');
-            if (!jwtToken) {window.location.href = '/';return;}
+            if (!jwtToken) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang');
+                const loginUrl = lang ? `/?lang=${lang}` : '/';
+                window.location.href = loginUrl;
+                return;
+            }
             const response = await fetch('/api/getusers', {
                     headers: {
                         'Authorization': `Bearer ${jwtToken}`

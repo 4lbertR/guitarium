@@ -4,27 +4,53 @@
     <link rel="stylesheet" href="/admin/styles.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Account</title>
-
+    <title data-translate="delete_group_title">Delete Group</title>
+    <script src="../translations.js"></script>
 </head>
 <body>
       <header>
-            <button onclick="window.location.href='/admin/index.html'">Tagasi</button>
+            <button onclick="goBackToAdmin()" data-translate="back_button">Tagasi</button>
         </header>
     <div class="container">
         <select id="groups"></select>
-        <button id="deleteGroupButton">Kustuta Grupp</button>
+        <button id="deleteGroupButton" data-translate="delete_group_button">Kustuta Grupp</button>
         <div id="message"></div>
     </div>
     
     <script>
+        function goBackToAdmin() {
+            // Preserve language parameter when going back
+            const urlParams = new URLSearchParams(window.location.search);
+            const lang = urlParams.get('lang');
+            const adminUrl = lang ? `/admin/index.html?lang=${lang}` : '/admin/index.html';
+            window.location.href = adminUrl;
+        }
+
         async function checkAdminAccess() {
             const jwtToken = localStorage.getItem('jwtToken');
-            if (!jwtToken) {window.location.href = '/';return;}
-            try {const response = await fetch('/api/isadmin', {headers: {'Authorization': `Bearer ${jwtToken}`}});
+            if (!jwtToken) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang');
+                const loginUrl = lang ? `/?lang=${lang}` : '/';
+                window.location.href = loginUrl;
+                return;
+            }
+            try {
+                const response = await fetch('/api/isadmin', {headers: {'Authorization': `Bearer ${jwtToken}`}});
                 const data = await response.json();
-                if (!data.admin) {window.location.href = '/success.html';}
-            } catch (error) {localStorage.removeItem('jwtToken');window.location.href = '/';}
+                if (!data.admin) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const lang = urlParams.get('lang');
+                    const successUrl = lang ? `/success.html?lang=${lang}` : '/success.html';
+                    window.location.href = successUrl;
+                }
+            } catch (error) {
+                localStorage.removeItem('jwtToken');
+                const urlParams = new URLSearchParams(window.location.search);
+                const lang = urlParams.get('lang');
+                const loginUrl = lang ? `/?lang=${lang}` : '/';
+                window.location.href = loginUrl;
+            }
         }
         document.addEventListener('DOMContentLoaded', checkAdminAccess);
     </script>

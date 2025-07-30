@@ -4,15 +4,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Guitarium Login</title>
+  <title data-translate="login_title">Guitarium Login</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="translations.js"></script>
 </head>
 <body onload="loggedin()">
-  <h1>Logi sisse</h1>
+  <h1 data-translate="login_heading">Logi sisse</h1>
   <form onsubmit="event.preventDefault(); login();">
-    <input type="text" id="fullname" placeholder="Ees- ja perekonnanimi" required>
-    <input type="password" id="password" placeholder="Parool" required>
-    <button type="submit">Logi sisse</button>
+    <input type="text" id="fullname" data-translate-placeholder="fullname_placeholder" placeholder="Ees- ja perekonnanimi" required>
+    <input type="password" id="password" data-translate-placeholder="password_placeholder" placeholder="Parool" required>
+    <button type="submit" data-translate="login_button">Logi sisse</button>
   </form>
   <p id="errorMessage" style="color: red;"></p>
 
@@ -21,7 +22,11 @@
       const token = localStorage.getItem('jwtToken');
       if (token) {
           console.log('User is logged in. Redirecting...');
-          window.location.href = '/success.html';
+          // Preserve language parameter when redirecting
+          const urlParams = new URLSearchParams(window.location.search);
+          const lang = urlParams.get('lang');
+          const successUrl = lang ? `/success.html?lang=${lang}` : '/success.html';
+          window.location.href = successUrl;
       } else {
           console.log('User is not logged in.');
       }
@@ -45,19 +50,25 @@
 
         if (data.success) {
           localStorage.setItem('jwtToken', data.token); // Store JWT in localStorage
+          // Preserve language parameter when redirecting
+          const urlParams = new URLSearchParams(window.location.search);
+          const lang = urlParams.get('lang');
+          const langParam = lang ? `?lang=${lang}` : '';
+          
           if (data.admin) {
-            window.location.href= '/admin/index.html'
+            window.location.href = `/admin/index.html${langParam}`;
             console.log(admin)
           }
-          else
-          {window.location.href = '/success.html'; // Redirect to the success page
-        }} 
+          else {
+            window.location.href = `/success.html${langParam}`; // Redirect to the success page
+          }
+        } 
         else {
-          errorMessage.textContent = 'Vale nimi või parool.';
+          errorMessage.textContent = t('wrong_credentials');
         }
       } catch (error) {
         console.error('Login error:', error);
-        errorMessage.textContent = 'Võrguviga või serveri viga.';
+        errorMessage.textContent = t('network_error');
       }
     }
   </script>
