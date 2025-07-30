@@ -1032,6 +1032,7 @@ function setupAppRoutes(app) {
                 }
                 
                 // Check if user would exceed their personal limit 
+                
                 if (userFutureJoins + successCount >= userMax) {
                     errorCount++;
                     errorMessages.push(`User would exceed personal limit of ${userMax} lessons`);
