@@ -278,6 +278,35 @@
               btn.onclick = async () => {
                 btn.disabled = true;
                 const action = btn.textContent === 'Liitu' ? 'join' : 'leave';
+                
+                // Store original state for potential rollback
+                const originalHasJoined = hasJoined;
+                const originalBtnText = btn.textContent;
+                const originalClasses = [...details.classList];
+                const existingIcon = summary.querySelector('.lesson-checkmark-icon');
+                
+                // Immediately update UI to show optimistic state
+                hasJoined = !hasJoined;
+                details.classList.toggle('joined');
+                btn.textContent = hasJoined ? 'Loobu' : 'Liitu';
+                howmany += hasJoined ? 1 : -1;
+                document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
+
+                // Update checkmark icon immediately
+                if (hasJoined) {
+                    if (!existingIcon) {
+                        const checkmarkImg = document.createElement('img');
+                        checkmarkImg.src = '/checkbox.png';
+                        checkmarkImg.alt = 'Joined';
+                        checkmarkImg.classList.add('lesson-checkmark-icon');
+                        summary.appendChild(checkmarkImg);
+                    }
+                } else {
+                    if (existingIcon) {
+                        existingIcon.remove();
+                    }
+                }
+
                 try {
                   const res = await fetch(`/api/${action}?eventId=${eventId}`, {
                     headers: {
@@ -288,31 +317,29 @@
                   
                   errorMsg.style.display = 'none';
                   if (result.success) {
-                    hasJoined = !hasJoined;
-                    details.classList.toggle('joined');
-                    btn.textContent = hasJoined ? 'Loobu' : 'Liitu';
-                    howmany += hasJoined ? 1 : -1;
-                    document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
-
-                    const existingIcon = summary.querySelector('.lesson-checkmark-icon');
-                    if (hasJoined) {
-                        if (!existingIcon) {
-                            const checkmarkImg = document.createElement('img');
-                            checkmarkImg.src = '/checkbox.png';
-                            checkmarkImg.alt = 'Joined';
-                            checkmarkImg.classList.add('lesson-checkmark-icon');
-                            summary.appendChild(checkmarkImg);
-                        }
-                    } else {
-                        if (existingIcon) {
-                            existingIcon.remove();
-                        }
-                    }
-
-                    // Re-fetch participants and update display
+                    // Success - keep the optimistic changes and update participant list
                     await updateParticipantsDisplay(eventId, p, group, config);
-
                   } else {
+                    // Error - revert the optimistic changes
+                    hasJoined = originalHasJoined;
+                    btn.textContent = originalBtnText;
+                    details.className = '';
+                    originalClasses.forEach(cls => details.classList.add(cls));
+                    howmany += originalHasJoined ? 1 : -1; // Revert count change
+                    document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
+                    
+                    // Revert checkmark icon
+                    const currentIcon = summary.querySelector('.lesson-checkmark-icon');
+                    if (originalHasJoined && !existingIcon && !currentIcon) {
+                        const checkmarkImg = document.createElement('img');
+                        checkmarkImg.src = '/checkbox.png';
+                        checkmarkImg.alt = 'Joined';
+                        checkmarkImg.classList.add('lesson-checkmark-icon');
+                        summary.appendChild(checkmarkImg);
+                    } else if (!originalHasJoined && currentIcon) {
+                        currentIcon.remove();
+                    }
+                    
                     errorMsg.textContent =
                       result.reason === 'too_late'
                         ? 'Ei saa loobuda vähem kui 24h enne algust.'
@@ -323,6 +350,27 @@
                   }
                 } catch (err) {
                   console.error('Fetch error:', err);
+                  
+                  // Network error - revert the optimistic changes
+                  hasJoined = originalHasJoined;
+                  btn.textContent = originalBtnText;
+                  details.className = '';
+                  originalClasses.forEach(cls => details.classList.add(cls));
+                  howmany += originalHasJoined ? 1 : -1; // Revert count change
+                  document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
+                  
+                  // Revert checkmark icon
+                  const currentIcon = summary.querySelector('.lesson-checkmark-icon');
+                  if (originalHasJoined && !existingIcon && !currentIcon) {
+                      const checkmarkImg = document.createElement('img');
+                      checkmarkImg.src = '/checkbox.png';
+                      checkmarkImg.alt = 'Joined';
+                      checkmarkImg.classList.add('lesson-checkmark-icon');
+                      summary.appendChild(checkmarkImg);
+                  } else if (!originalHasJoined && currentIcon) {
+                      currentIcon.remove();
+                  }
+                  
                   errorMsg.textContent = 'Võrguviga või serveri viga.';
                   errorMsg.style.display = 'block';
                 } finally {
@@ -401,4 +449,3 @@
   </script>
 </body>
 </html>
-``` 
