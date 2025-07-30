@@ -201,14 +201,10 @@
         const future = data.future || [];
         const past = data.past || [];
 
-        const displaymaxResponse = await fetch('/api/displaymax', {
-          headers: {
-            'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT
-          }
-        });
-        const displaymax = await displaymaxResponse.json();
         let howmany = 0;
         howmany = future.filter(e => e[6].includes(userId)).length;
+
+        document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
 
         document.getElementById('myText').textContent = `Tulemas: ${future.length}, Möödunud: ${past.length}`;
 
@@ -296,11 +292,7 @@
                     details.classList.toggle('joined');
                     btn.textContent = hasJoined ? 'Loobu' : 'Liitu';
                     howmany += hasJoined ? 1 : -1;
-                    if(displaymax.ic){
-                      document.getElementById('fixedInfo').innerHTML = `Sinu grupp on ${group}<br>Oled liitunud ${howmany}/${displaymax.max} tunniga`;
-                    } else {
-                      document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
-                    }
+                    document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
 
                     const existingIcon = summary.querySelector('.lesson-checkmark-icon');
                     if (hasJoined) {
@@ -324,8 +316,6 @@
                     errorMsg.textContent =
                       result.reason === 'too_late'
                         ? 'Ei saa loobuda vähem kui 24h enne algust.'
-                        : result.reason === 'overflow'
-                          ? 'Sa oled liitunud maksimaalse arvu tunniga'
                         : result.reason === 'full'
                           ? 'Tund on täis.'
                           : 'Toiming ebaõnnestus.';
@@ -411,3 +401,4 @@
   </script>
 </body>
 </html>
+``` 

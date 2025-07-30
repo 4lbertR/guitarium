@@ -211,34 +211,6 @@ async function join(eventId, userId) {
         return { success: false, reason: 'full' };
     }
 
-    // Check user's personal limit (how many future lessons they can join)
-    const allEvents = await calendar.events.list({
-        calendarId,
-        maxResults: 100,
-        singleEvents: true,
-        orderBy: 'startTime'
-    });
-
-    const db = await mysql.createConnection(DB_CONFIG);
-    const [rows] = await db.execute('SELECT grupp FROM users WHERE id = ?', [userId]);
-    const userGroup = rows[0]?.grupp;
-    await db.end();
-
-    const userMax = config[userGroup]?.max || Infinity;
-
-    const userFutureJoins = (allEvents.data.items || []).filter(event => {
-        const joined = (event.description || '')
-            .split(/\s+/)
-            .filter(x => /^\d+$/.test(x.trim()))
-            .map(Number);
-        const start = event.start?.dateTime ? new Date(event.start.dateTime) : null;
-        return start && joined.includes(userId) && start > new Date();
-    }).length;
-    
-    if (userFutureJoins >= userMax) {
-        return { success: false, reason: 'overflow' };
-    }
-
     ids.push(userId);
     const newDescription = ids.join('\n');
 
@@ -492,18 +464,7 @@ function setupAppRoutes(app) {
     });
 
     app.get('/api/displaymax', async(req, res) => {
-        const userId = req.userId; // Get userId from JWT token
-        
-        const db = await mysql.createConnection(DB_CONFIG);
-        const [rows] = await db.execute('SELECT grupp FROM users WHERE id = ?', [userId]);
-        const group = rows[0]?.grupp;
-        await db.end();
-
-        if(group in config) {
-            res.json({ ic: true, max: config[group].max });
-        } else {
-            res.json({ ic: false, max: 0 });
-        }
+        res.json({ ic: false, max: 0 });
     });
 
     // Apply requireAdmin middleware to all routes below this point
@@ -1015,30 +976,11 @@ function setupAppRoutes(app) {
         }
         
         const userId = userRows[0].id;
-        const userGroup = userRows[0].grupp;
         
         // Register user for each selected lesson
         const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
         const authClient = await auth.getClient();
         const calendar = google.calendar({ version: 'v3', auth: authClient });
-        
-        // Get all events to check user's current future registrations
-        const allEvents = await calendar.events.list({
-            calendarId,
-            maxResults: 100,
-            singleEvents: true,
-            orderBy: 'startTime'
-        });
-
-        const userMax = config[userGroup]?.max || Infinity;
-        const userFutureJoins = (allEvents.data.items || []).filter(event => {
-            const joined = (event.description || '')
-                .split(/\s+/)
-                .filter(x => /^\d+$/.test(x.trim()))
-                .map(Number);
-            const start = event.start?.dateTime ? new Date(event.start.dateTime) : null;
-            return start && joined.includes(userId) && start > new Date();
-        }).length;
         
         let successCount = 0;
         let errorCount = 0;
@@ -1068,14 +1010,6 @@ function setupAppRoutes(app) {
                 if (ids.length >= lessonMax) {
                     errorCount++;
                     errorMessages.push(`Lesson ${eventId} is full`);
-                    continue;
-                }
-                
-                // Check if user would exceed their personal limit 
-
-                if (userFutureJoins + successCount >= userMax) {
-                    errorCount++;
-                    errorMessages.push(`User would exceed personal limit of ${userMax} lessons`);
                     continue;
                 }
                 
