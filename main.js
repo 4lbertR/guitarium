@@ -454,6 +454,31 @@ function setupAppRoutes(app) {
         }
     });
 
+    app.post('/api/getBulkParticipants', async(req, res) => {
+        const { eventIds } = req.body;
+        if (!eventIds || !Array.isArray(eventIds)) {
+            return res.status(400).json({ error: 'eventIds array is required' });
+        }
+        
+        try {
+            const results = {};
+            await Promise.all(eventIds.map(async (eventId) => {
+                try {
+                    const result = await getParticipants(eventId);
+                    results[eventId] = result;
+                } catch (err) {
+                    console.error(`Error fetching participants for event ${eventId}:`, err);
+                    results[eventId] = { participants: [], max: 0, group: '', cancelled: false };
+                }
+            }));
+            
+            res.json(results);
+        } catch (err) {
+            console.error('Bulk participant fetch failed:', err.message);
+            res.status(500).json({ error: 'Failed to fetch participants' });
+        }
+    });
+
     app.get('/api/me', (req, res) => {
         if (req.userId && req.group) {
             res.json({ id: req.userId, group: req.group });

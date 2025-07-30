@@ -209,17 +209,31 @@
         const displaymax = await displaymaxResponse.json();
         let howmany = 0;
         howmany = future.filter(e => e[6].includes(userId)).length;
-        //if(displaymax.ic){
-        //   document.getElementById('fixedInfo').innerHTML = `Sinu grupp on ${group}<br>Oled liitunud ${howmany}/${displaymax.max} tunniga`;
-        //} else {
-        //   document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
-        //}
 
-        //
         document.getElementById('myText').textContent = `Tulemas: ${future.length}, Möödunud: ${past.length}`;
 
         const render = async (target, list, isFuture = false) => {
-          for (const event of list) {
+          // Batch fetch all participant data at once
+          const eventIds = list.map(event => event[5]); // eventId is at index 5
+          const participantPromises = eventIds.map(eventId => 
+            fetch('/api/getParticipants?eventId=' + eventId, {
+              headers: {
+                'Authorization': `Bearer ${jwtToken}`
+              }
+            }).then(res => res.json()).catch(err => {
+              console.error('Error fetching participants for event ' + eventId, err);
+              return { participants: [], max: 0, group: '', cancelled: false };
+            })
+          );
+          
+          const participantResults = await Promise.all(participantPromises);
+          const participantData = {};
+          eventIds.forEach((eventId, index) => {
+            participantData[eventId] = participantResults[index];
+          });
+
+          // Process events in parallel without await in the loop
+          const eventElements = list.map((event, index) => {
             const [year, month, day, start, end, eventId, joined, isCancelled] = event;
             let hasJoined = joined.includes(userId);
 
@@ -239,19 +253,23 @@
               summaryTextSpan.textContent = `${day}. ${month} ${year}, ${start}–${end}`;
             }
 
-            summary.appendChild(summaryTextSpan); // Append text first
+            summary.appendChild(summaryTextSpan);
             if (hasJoined && !isCancelled) {
                 const checkmarkImg = document.createElement('img');
                 checkmarkImg.src = '/checkbox.png';
                 checkmarkImg.alt = 'Joined';
                 checkmarkImg.classList.add('lesson-checkmark-icon');
-                summary.appendChild(checkmarkImg); // Then append image
+                summary.appendChild(checkmarkImg);
             }
 
             details.appendChild(summary);
 
             const body = document.createElement('div');
             const p = document.createElement('p');
+            
+            // Update participants display with pre-fetched data
+            updateParticipantsDisplaySync(p, participantData[eventId], group, config);
+            
             body.appendChild(p);
 
             if (isFuture && !isCancelled) {
@@ -261,13 +279,13 @@
               errorMsg.className = 'error-msg';
               errorMsg.style.display = 'none';
 
-              btn.onclick = async () => { // Changed to async function
+              btn.onclick = async () => {
                 btn.disabled = true;
                 const action = btn.textContent === 'Liitu' ? 'join' : 'leave';
                 try {
                   const res = await fetch(`/api/${action}?eventId=${eventId}`, {
                     headers: {
-                      'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT
+                      'Authorization': `Bearer ${jwtToken}`
                     }
                   });
                   const result = await res.json();
@@ -277,14 +295,14 @@
                     hasJoined = !hasJoined;
                     details.classList.toggle('joined');
                     btn.textContent = hasJoined ? 'Loobu' : 'Liitu';
-                    howmany += hasJoined ? 1 : -1;;
+                    howmany += hasJoined ? 1 : -1;
                     if(displaymax.ic){
                       document.getElementById('fixedInfo').innerHTML = `Sinu grupp on ${group}<br>Oled liitunud ${howmany}/${displaymax.max} tunniga`;
                     } else {
                       document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
                     }
 
-                    const existingIcon = summary.querySelector('.lesson-checkmark-icon'); // Corrected typo
+                    const existingIcon = summary.querySelector('.lesson-checkmark-icon');
                     if (hasJoined) {
                         if (!existingIcon) {
                             const checkmarkImg = document.createElement('img');
@@ -308,9 +326,9 @@
                         ? 'Ei saa loobuda vähem kui 24h enne algust.'
                         : result.reason === 'overflow'
                           ? 'Sa oled liitunud maksimaalse arvu tunniga'
-                          : result.reason === 'full'
-                            ? 'Tund on täis.'
-                            : 'Toiming ebaõnnestus.';
+                        : result.reason === 'full'
+                          ? 'Tund on täis.'
+                          : 'Toiming ebaõnnestus.';
                     errorMsg.style.display = 'block';
                   }
                 } catch (err) {
@@ -322,29 +340,47 @@
                 }
               };
 
-              // Check if user should be able to join based on their current registrations and lesson capacity
-              if (!hasJoined && displaymax.ic && howmany >= displaymax.max) {
-                btn.disabled = true;
-                btn.textContent = 'Liitu';
-                errorMsg.textContent = 'Sa oled liitunud maksimaalse arvu tunniga';
-                errorMsg.style.display = 'block';
-              }
-
               body.appendChild(btn);
               body.appendChild(errorMsg);
             }
 
-            // Initial fetch of participants for this event when the page loads
-            await updateParticipantsDisplay(eventId, p, group, config);
-
             details.appendChild(body);
             const wrapper = document.createElement('li');
             wrapper.appendChild(details);
-            target.appendChild(wrapper);
-          }
+            return wrapper;
+          });
+
+          // Append all elements at once
+          eventElements.forEach(element => target.appendChild(element));
         };
 
-        // Helper function to update participants display with count
+        // Synchronous version for pre-fetched data
+        function updateParticipantsDisplaySync(paragraphElement, result, userGroup, config) {
+          if (result.cancelled) {
+            paragraphElement.textContent = 'Tund on tühistatud';
+            return;
+          }
+          
+          const participants = result.participants || result || [];
+          const maxParticipants = result.max !== undefined ? result.max : (config[userGroup]?.max || Infinity);
+          const currentCount = participants.length;
+          
+          let displayText = '';
+          if (maxParticipants !== Infinity) {
+            displayText = `${currentCount}/${maxParticipants} inimest on liitunud tunniga:\n`;
+          } else {
+            displayText = `${currentCount} inimest on liitunud tunniga\n`;
+          }
+          
+          if (participants.length > 0) {
+            displayText += participants.map(x => x.fullname).join('\n');
+          }
+          
+          paragraphElement.style.whiteSpace = 'pre-line';
+          paragraphElement.textContent = displayText;
+        }
+
+        // Keep the original function for individual updates after join/leave
         async function updateParticipantsDisplay(eventId, paragraphElement, userGroup, config) {
           try {
             const participantsRes = await fetch('/api/getParticipants?eventId=' + eventId, {
@@ -353,33 +389,7 @@
               }
             });
             const result = await participantsRes.json();
-            
-            // Check if event is cancelled
-            if (result.cancelled) {
-              paragraphElement.textContent = 'Tund on tühistatud';
-              return;
-            }
-            
-            // Handle both old and new response formats
-            const participants = result.participants || result || [];
-            const maxParticipants = result.max !== undefined ? result.max : (config[userGroup]?.max || Infinity);
-            const currentCount = participants.length;
-            
-            let displayText = '';
-            if (maxParticipants !== Infinity) {
-              displayText = `${currentCount}/${maxParticipants} inimest on liitunud tunniga:\n`;
-            } else {
-              displayText = `${currentCount} inimest on liitunud tunniga\n`;
-            }
-            
-            if (participants.length > 0) {
-              displayText += participants.map(x => x.fullname).join('\n');
-            } else {
-              displayText += '';
-            }
-            
-            paragraphElement.style.whiteSpace = 'pre-line';
-            paragraphElement.textContent = displayText;
+            updateParticipantsDisplaySync(paragraphElement, result, userGroup, config);
           } catch (err) {
             console.error('Error fetching participants for event ' + eventId, err);
             paragraphElement.textContent = 'Osalejate laadimisel tekkis viga.';
