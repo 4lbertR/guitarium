@@ -57,7 +57,7 @@ function authenticateToken(req, res, next) {
 }
 
 function requireAdmin(req, res, next) {
-    if (req.fullname && admins.includes(req.fullname)) {
+    if (req.group== 'admin') {
         next();
     } else {
         return res.status(403).json({ message: 'Admin access required' });
