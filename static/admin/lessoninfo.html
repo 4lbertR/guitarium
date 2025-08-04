@@ -143,20 +143,37 @@
             dateSelect.disabled = true;
             getInfoBtn.disabled = true;
             
+            console.log('Loading dates for group:', group);
+            
             try {
                 // Use the admin events API that returns all events without group filtering
                 const response = await fetch('/api/getevents-admin', {
                     headers: { 'Authorization': `Bearer ${jwtToken}` }
                 });
+                
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const events = await response.json();
+                console.log('All events:', events);
                 
                 // Filter events for the selected group and get future dates
                 const groupEvents = events.filter(event => event.group === group);
+                console.log('Group events:', groupEvents);
+                
                 const now = new Date();
+                console.log('Current time:', now);
+                
                 const futureDates = [];
                 
                 for (const event of groupEvents) {
+                    console.log('Processing event:', event);
+                    
                     if (event.recurring) {
+                        console.log('Recurring event, fetching instances...');
                         // Get instances for recurring events
                         try {
                             const instancesResponse = await fetch('/api/getrecurring-instances', {
@@ -167,10 +184,18 @@
                                 },
                                 body: JSON.stringify({ eventId: event.id })
                             });
+                            
+                            if (!instancesResponse.ok) {
+                                console.error('Failed to fetch instances:', instancesResponse.status);
+                                continue;
+                            }
+                            
                             const instances = await instancesResponse.json();
+                            console.log('Instances:', instances);
                             
                             instances.forEach(instance => {
                                 const startDate = new Date(instance.start);
+                                console.log('Instance start date:', startDate, 'vs now:', now);
                                 if (startDate >= now) {
                                     futureDates.push({
                                         eventId: instance.id,
@@ -186,6 +211,7 @@
                         // Single events
                         if (event.start) {
                             const startDate = new Date(event.start);
+                            console.log('Single event start date:', startDate, 'vs now:', now);
                             if (startDate >= now) {
                                 futureDates.push({
                                     eventId: event.id,
@@ -197,14 +223,18 @@
                     }
                 }
                 
+                console.log('Future dates found:', futureDates);
+                
                 // Sort by date
                 futureDates.sort((a, b) => a.date - b.date);
                 
                 dateSelect.innerHTML = '<option value="">Vali kuupäev</option>';
                 
                 if (futureDates.length === 0) {
+                    console.log('No future dates found');
                     dateSelect.innerHTML = '<option value="">Tulevasi tunde ei leitud</option>';
                 } else {
+                    console.log('Adding', futureDates.length, 'dates to dropdown');
                     futureDates.forEach(dateInfo => {
                         const option = document.createElement('option');
                         option.value = dateInfo.eventId;
@@ -216,6 +246,8 @@
                 
             } catch (error) {
                 console.error('Viga kuupäevade laadimisel:', error);
+                console.error('Error details:', error.message);
+                console.error('Stack:', error.stack);
                 dateSelect.innerHTML = '<option value="">Viga kuupäevade laadimisel</option>';
             }
         }
