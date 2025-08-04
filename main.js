@@ -772,6 +772,7 @@ function setupAppRoutes(app) {
 
             let successCount = 0;
             let errorCount = 0;
+            let skippedCount = 0;
             const errors = [];
 
             // Skip header row
@@ -791,6 +792,9 @@ function setupAppRoutes(app) {
                     const result = await createAccount(fullname, password, group);
                     if (result.success) {
                         successCount++;
+                    } else if (result.message === 'User with this full name already exists.') {
+                        // Skip duplicates without treating as error
+                        skippedCount++;
                     } else {
                         errorCount++;
                         errors.push(`Row ${i + 1}: ${result.message}`);
@@ -804,9 +808,10 @@ function setupAppRoutes(app) {
             res.json({
                 success: true,
                 count: successCount,
+                skipped: skippedCount,
                 errors: errorCount,
                 errorDetails: errors,
-                message: `Loaded ${successCount} accounts successfully. ${errorCount} errors.`
+                message: `Loaded ${successCount} accounts successfully. ${skippedCount} accounts skipped (already exist). ${errorCount} errors.`
             });
         } catch (error) {
             res.status(500).json({ 

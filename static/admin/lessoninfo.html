@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+    <link rel="stylesheet" href="/admin/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tunni info</title>
+    <style>
+        .lesson-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .participant-list {
+            margin-top: 15px;
+        }
+        .participant {
+            background: #e9ecef;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 4px solid #28a745;
+        }
+        .capacity-info {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 10px;
+            background: #e3f2fd;
+            border-radius: 4px;
+        }
+        .lesson-date {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #ffc107;
+        }
+        .cancelled-lesson {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .no-participants {
+            color: #6c757d;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+        }
+        select, button {
+            margin: 10px 0;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .loading {
+            text-align: center;
+            color: #6c757d;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <button onclick="window.location.href='/admin/index.html'">Tagasi</button>
+    </header>
+    <div class="container">
+        <h2>Tunni info</h2>
+        
+        <div>
+            <label for="group-select">Vali grupp:</label>
+            <select id="group-select">
+                <option value="">Vali grupp</option>
+            </select>
+        </div>
+        
+        <div>
+            <label for="date-select">Vali kuupäev:</label>
+            <select id="date-select" disabled>
+                <option value="">Vali esmalt grupp</option>
+            </select>
+        </div>
+        
+        <button id="get-info-btn" onclick="getLessonInfo()" disabled>Näita tunni infot</button>
+        
+        <div id="lesson-info-container"></div>
+    </div>
+
+    <script>
+        async function checkAdminAccess() {
+            const jwtToken = localStorage.getItem('jwtToken');
+            if (!jwtToken) {
+                window.location.href = '/';
+                return;
+            }
+            try {
+                const response = await fetch('/api/isadmin', {
+                    headers: { 'Authorization': `Bearer ${jwtToken}` }
+                });
+                const data = await response.json();
+                if (!data.admin) {
+                    window.location.href = '/index.html';
+                }
+            } catch (error) {
+                localStorage.removeItem('jwtToken');
+                window.location.href = '/';
+            }
+        }
+
+        async function loadGroups() {
+            const jwtToken = localStorage.getItem('jwtToken');
+            try {
+                const response = await fetch('/api/getgroups', {
+                    headers: { 'Authorization': `Bearer ${jwtToken}` }
+                });
+                const groups = await response.json();
+                const groupSelect = document.getElementById('group-select');
+                
+                groups.sort((a, b) => a.localeCompare(b));
+                groups.forEach(group => {
+                    const option = document.createElement('option');
+                    option.value = group;
+                    option.textContent = group;
+                    groupSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Viga gruppide laadimisel:', error);
+            }
+        }
+
+        async function loadDatesForGroup(group) {
+            const jwtToken = localStorage.getItem('jwtToken');
+            const dateSelect = document.getElementById('date-select');
+            const getInfoBtn = document.getElementById('get-info-btn');
+            
+            dateSelect.innerHTML = '<option value="">Laadin kuupäevi...</option>';
+            dateSelect.disabled = true;
+            getInfoBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/getevents-admin', {
+                    headers: { 'Authorization': `Bearer ${jwtToken}` }
+                });
+                const events = await response.json();
+                
+                // Filter events for the selected group and get future dates
+                const groupEvents = events.filter(event => event.group === group);
+                const now = new Date();
+                const futureDates = [];
+                
+                for (const event of groupEvents) {
+                    if (event.recurring) {
+                        // Get instances for recurring events
+                        const instancesResponse = await fetch('/api/getrecurring-instances', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${jwtToken}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ eventId: event.id })
+                        });
+                        const instances = await instancesResponse.json();
+                        
+                        instances.forEach(instance => {
+                            const startDate = new Date(instance.start);
+                            if (startDate >= now) {
+                                futureDates.push({
+                                    eventId: instance.id,
+                                    date: startDate,
+                                    dateString: formatDateString(startDate)
+                                });
+                            }
+                        });
+                    } else {
+                        // Single events
+                        const startDate = new Date(event.start);
+                        if (startDate >= now) {
+                            futureDates.push({
+                                eventId: event.id,
+                                date: startDate,
+                                dateString: formatDateString(startDate)
+                            });
+                        }
+                    }
+                }
+                
+                // Sort by date
+                futureDates.sort((a, b) => a.date - b.date);
+                
+                dateSelect.innerHTML = '<option value="">Vali kuupäev</option>';
+                
+                if (futureDates.length === 0) {
+                    dateSelect.innerHTML = '<option value="">Tulevasi tunde ei leitud</option>';
+                } else {
+                    futureDates.forEach(dateInfo => {
+                        const option = document.createElement('option');
+                        option.value = dateInfo.eventId;
+                        option.textContent = dateInfo.dateString;
+                        dateSelect.appendChild(option);
+                    });
+                    dateSelect.disabled = false;
+                }
+                
+            } catch (error) {
+                console.error('Viga kuupäevade laadimisel:', error);
+                dateSelect.innerHTML = '<option value="">Viga kuupäevade laadimisel</option>';
+            }
+        }
+
+        function formatDateString(date) {
+            const months = [
+                'jaanuar', 'veebruar', 'märts', 'aprill', 'mai', 'juuni',
+                'juuli', 'august', 'september', 'oktoober', 'november', 'detsember'
+            ];
+            
+            const day = date.getDate();
+            const month = months[date.getMonth()];
+            const year = date.getFullYear();
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            
+            return `${day}. ${month} ${year}, ${hours}:${minutes}`;
+        }
+
+        async function getLessonInfo() {
+            const eventId = document.getElementById('date-select').value;
+            const group = document.getElementById('group-select').value;
+            const jwtToken = localStorage.getItem('jwtToken');
+            const container = document.getElementById('lesson-info-container');
+            
+            if (!eventId || !group) {
+                alert('Palun vali grupp ja kuupäev');
+                return;
+            }
+            
+            container.innerHTML = '<div class="loading">Laaditakse tunni infot...</div>';
+            
+            try {
+                const response = await fetch(`/api/getParticipants?eventId=${eventId}`, {
+                    headers: { 'Authorization': `Bearer ${jwtToken}` }
+                });
+                const data = await response.json();
+                
+                // Get selected date for display
+                const selectedOption = document.getElementById('date-select').selectedOptions[0];
+                const selectedDate = selectedOption.textContent;
+                
+                let infoHTML = `
+                    <div class="lesson-info">
+                        <h3>Tunni info - ${group}</h3>
+                        <div class="lesson-date">
+                            <strong>Kuupäev ja kellaaeg:</strong> ${selectedDate}
+                        </div>
+                `;
+                
+                if (data.cancelled) {
+                    infoHTML += `
+                        <div class="cancelled-lesson">
+                            ⚠️ TUND ON TÜHISTATUD ⚠️
+                        </div>
+                    `;
+                } else {
+                    const filledSpots = data.participants.length;
+                    const maxSpots = data.max === Infinity ? 'Piiritud' : data.max;
+                    const spotsLeft = data.max === Infinity ? '∞' : (data.max - filledSpots);
+                    
+                    infoHTML += `
+                        <div class="capacity-info">
+                            📊 Kohti täidetud: ${filledSpots}/${maxSpots} 
+                            ${data.max !== Infinity ? `(${spotsLeft} kohta vaba)` : ''}
+                        </div>
+                    `;
+                    
+                    if (data.participants.length > 0) {
+                        infoHTML += `
+                            <div class="participant-list">
+                                <h4>👥 Registreeritud osalejad (${data.participants.length}):</h4>
+                        `;
+                        
+                        data.participants.forEach((participant, index) => {
+                            infoHTML += `
+                                <div class="participant">
+                                    ${index + 1}. ${participant.fullname}
+                                </div>
+                            `;
+                        });
+                        
+                        infoHTML += '</div>';
+                    } else {
+                        infoHTML += `
+                            <div class="no-participants">
+                                😔 Sellele tunnile pole veel keegi registreeritud
+                            </div>
+                        `;
+                    }
+                }
+                
+                infoHTML += '</div>';
+                container.innerHTML = infoHTML;
+                
+            } catch (error) {
+                console.error('Viga tunni info laadimisel:', error);
+                container.innerHTML = `
+                    <div class="lesson-info">
+                        <div style="color: red; text-align: center;">
+                            ❌ Viga tunni info laadimisel
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Event listeners
+        document.getElementById('group-select').addEventListener('change', function() {
+            const selectedGroup = this.value;
+            const dateSelect = document.getElementById('date-select');
+            const getInfoBtn = document.getElementById('get-info-btn');
+            const container = document.getElementById('lesson-info-container');
+            
+            if (selectedGroup) {
+                loadDatesForGroup(selectedGroup);
+            } else {
+                dateSelect.innerHTML = '<option value="">Vali esmalt grupp</option>';
+                dateSelect.disabled = true;
+                getInfoBtn.disabled = true;
+                container.innerHTML = '';
+            }
+        });
+
+        document.getElementById('date-select').addEventListener('change', function() {
+            const getInfoBtn = document.getElementById('get-info-btn');
+            const container = document.getElementById('lesson-info-container');
+            
+            if (this.value) {
+                getInfoBtn.disabled = false;
+            } else {
+                getInfoBtn.disabled = true;
+                container.innerHTML = '';
+            }
+        });
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAdminAccess();
+            loadGroups();
+        });
+    </script>
+</body>
+</html>
