@@ -146,8 +146,8 @@
             console.log('Loading dates for group:', group);
             
             try {
-                // Use the admin events API that returns all events without group filtering
-                const response = await fetch('/api/getevents-admin', {
+                // Use the regular events API but without group filtering to get all events
+                const response = await fetch('/api/events', {
                     headers: { 'Authorization': `Bearer ${jwtToken}` }
                 });
                 
@@ -157,70 +157,58 @@
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
-                const events = await response.json();
-                console.log('All events:', events);
+                const eventsData = await response.json();
+                console.log('Events data:', eventsData);
                 
-                // Filter events for the selected group and get future dates
-                const groupEvents = events.filter(event => event.group === group);
-                console.log('Group events:', groupEvents);
-                
-                const now = new Date();
-                console.log('Current time:', now);
-                
+                // Get future events - look through all groups
                 const futureDates = [];
+                const now = new Date();
                 
-                for (const event of groupEvents) {
-                    console.log('Processing event:', event);
-                    
-                    if (event.recurring) {
-                        console.log('Recurring event, fetching instances...');
-                        // Get instances for recurring events
-                        try {
-                            const instancesResponse = await fetch('/api/getrecurring-instances', {
-                                method: 'POST',
-                                headers: {
-                                    'Authorization': `Bearer ${jwtToken}`,
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({ eventId: event.id })
-                            });
+                if (eventsData.future) {
+                    // Check if the specific group has events
+                    if (eventsData.future[group]) {
+                        console.log('Found events for group:', group, eventsData.future[group]);
+                        
+                        eventsData.future[group].forEach(eventInfo => {
+                            // eventInfo format: [year, month, day, startTime, endTime, eventId, joined, isCancelled]
+                            const year = eventInfo[0];
+                            const monthName = eventInfo[1];
+                            const day = eventInfo[2];
+                            const startTime = eventInfo[3];
+                            const endTime = eventInfo[4];
+                            const eventId = eventInfo[5];
+                            const isCancelled = eventInfo[7];
                             
-                            if (!instancesResponse.ok) {
-                                console.error('Failed to fetch instances:', instancesResponse.status);
-                                continue;
-                            }
+                            console.log('Processing event:', eventInfo);
                             
-                            const instances = await instancesResponse.json();
-                            console.log('Instances:', instances);
+                            // Create date object for sorting
+                            const months = {
+                                'jaanuar': 0, 'veebruar': 1, 'märts': 2, 'aprill': 3,
+                                'mai': 4, 'juuni': 5, 'juuli': 6, 'august': 7,
+                                'september': 8, 'oktoober': 9, 'november': 10, 'detsember': 11
+                            };
                             
-                            instances.forEach(instance => {
-                                const startDate = new Date(instance.start);
-                                console.log('Instance start date:', startDate, 'vs now:', now);
-                                if (startDate >= now) {
-                                    futureDates.push({
-                                        eventId: instance.id,
-                                        date: startDate,
-                                        dateString: formatDateString(startDate)
-                                    });
-                                }
-                            });
-                        } catch (err) {
-                            console.error('Error fetching recurring instances:', err);
-                        }
-                    } else {
-                        // Single events
-                        if (event.start) {
-                            const startDate = new Date(event.start);
-                            console.log('Single event start date:', startDate, 'vs now:', now);
-                            if (startDate >= now) {
+                            const monthIndex = months[monthName];
+                            const eventDate = new Date(year, monthIndex, parseInt(day));
+                            
+                            console.log('Event date:', eventDate, 'vs now:', now);
+                            
+                            // Only include future events
+                            if (eventDate >= now.setHours(0, 0, 0, 0)) {
                                 futureDates.push({
-                                    eventId: event.id,
-                                    date: startDate,
-                                    dateString: formatDateString(startDate)
+                                    eventId: eventId,
+                                    date: eventDate,
+                                    dateString: `${day}. ${monthName} ${year}, ${startTime}-${endTime}`,
+                                    isCancelled: isCancelled
                                 });
                             }
-                        }
+                        });
+                    } else {
+                        console.log('No events found for group:', group);
+                        console.log('Available groups:', Object.keys(eventsData.future));
                     }
+                } else {
+                    console.log('No future events in response');
                 }
                 
                 console.log('Future dates found:', futureDates);
@@ -238,7 +226,11 @@
                     futureDates.forEach(dateInfo => {
                         const option = document.createElement('option');
                         option.value = dateInfo.eventId;
-                        option.textContent = dateInfo.dateString;
+                        option.textContent = dateInfo.dateString + (dateInfo.isCancelled ? ' (TÜHISTATUD)' : '');
+                        if (dateInfo.isCancelled) {
+                            option.style.color = '#dc3545';
+                            option.style.fontStyle = 'italic';
+                        }
                         dateSelect.appendChild(option);
                     });
                     dateSelect.disabled = false;
