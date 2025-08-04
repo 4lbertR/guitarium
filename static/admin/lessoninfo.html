@@ -144,86 +144,26 @@
             getInfoBtn.disabled = true;
             
             try {
-                // Get events from Google Calendar for this group like bulkregister does
-                const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
-                const authClient = await auth.getClient();
-                const calendar = google.calendar({ version: 'v3', auth: authClient });
-
-                const now = new Date();
-                const result = await fetch('/api/getuserlessons?user=' + encodeURIComponent('admin'), {
-                    headers: { 'Authorization': `Bearer ${jwtToken}` }
-                });
-                
-                if (!result.ok) {
-                    throw new Error('Failed to fetch lessons');
-                }
-                
-                // Use the calendar API directly
-                const response = await fetch('/api/getevents-admin', {
+                const response = await fetch(`/api/getevents-by-group?group=${encodeURIComponent(group)}`, {
                     headers: { 'Authorization': `Bearer ${jwtToken}` }
                 });
                 
                 if (!response.ok) {
-                    throw new Error('Failed to fetch events');
+                    throw new Error('Failed to fetch events for group');
                 }
                 
-                const events = await response.json();
-                console.log('All events:', events);
-                
-                const futureDates = [];
-                
-                // Get all calendar events and filter by group
-                const calendarResponse = await fetch('/api/events', {
-                    headers: { 'Authorization': `Bearer ${jwtToken}` }
-                });
-                
-                if (calendarResponse.ok) {
-                    const eventsData = await calendarResponse.json();
-                    console.log('Calendar events data:', eventsData);
-                    
-                    // Check all groups for events
-                    if (eventsData.future) {
-                        Object.keys(eventsData.future).forEach(eventGroup => {
-                            if (eventGroup === group) {
-                                eventsData.future[eventGroup].forEach(eventInfo => {
-                                    const [year, month, day, startTime, endTime, eventId, joined, isCancelled] = eventInfo;
-                                    
-                                    const months = {
-                                        'jaanuar': 0, 'veebruar': 1, 'märts': 2, 'aprill': 3,
-                                        'mai': 4, 'juuni': 5, 'juuli': 6, 'august': 7,
-                                        'september': 8, 'oktoober': 9, 'november': 10, 'detsember': 11
-                                    };
-                                    
-                                    const monthIndex = months[month];
-                                    const eventDate = new Date(year, monthIndex, parseInt(day));
-                                    
-                                    if (eventDate >= now.setHours(0, 0, 0, 0)) {
-                                        futureDates.push({
-                                            eventId: eventId,
-                                            date: eventDate,
-                                            dateString: `${day}. ${month} ${year}, ${startTime}-${endTime}`,
-                                            isCancelled: isCancelled
-                                        });
-                                    }
-                                });
-                            }
-                        });
-                    }
-                }
-                
-                console.log('Future dates found:', futureDates);
-                
-                futureDates.sort((a, b) => a.date - b.date);
+                const futureEvents = await response.json();
+                console.log('Future events for group:', group, futureEvents);
                 
                 dateSelect.innerHTML = '<option value="">Vali kuupäev</option>';
                 
-                if (futureDates.length === 0) {
+                if (futureEvents.length === 0) {
                     dateSelect.innerHTML = '<option value="">Tulevasi tunde ei leitud</option>';
                 } else {
-                    futureDates.forEach(dateInfo => {
+                    futureEvents.forEach(event => {
                         const option = document.createElement('option');
-                        option.value = dateInfo.eventId;
-                        option.textContent = dateInfo.dateString + (dateInfo.isCancelled ? ' (TÜHISTATUD)' : '');
+                        option.value = event.eventId;
+                        option.textContent = event.dateString + (event.isCancelled ? ' (TÜHISTATUD)' : '');
                         dateSelect.appendChild(option);
                     });
                     dateSelect.disabled = false;

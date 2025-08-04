@@ -593,6 +593,69 @@ function setupAppRoutes(app) {
         res.json(events);
     });
 
+    app.get('/api/getevents-by-group', async(req, res) => {
+        const { group } = req.query;
+        if (!group) {
+            return res.status(400).json({ error: 'Group parameter is required' });
+        }
+        
+        try {
+            const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
+            const authClient = await auth.getClient();
+            const calendar = google.calendar({ version: 'v3', auth: authClient });
+
+            const now = new Date();
+            const result = await calendar.events.list({
+                calendarId,
+                maxResults: 100,
+                singleEvents: true,
+                orderBy: 'startTime',
+                timeMin: now.toISOString()
+            });
+
+            const months = {
+                '01': 'jaanuar', '02': 'veebruar', '03': 'märts', '04': 'aprill',
+                '05': 'mai', '06': 'juuni', '07': 'juuli', '08': 'august',
+                '09': 'september', '10': 'oktoober', '11': 'november', '12': 'detsember'
+            };
+
+            const futureEvents = (result.data.items || [])
+                .filter(event => event.summary === group)
+                .map(event => {
+                    const start = event.start?.dateTime;
+                    const end = event.end?.dateTime;
+                    const eventId = event.id;
+                    const eventDescription = event.description || '';
+                    const isCancelled = eventDescription.trim() === 'TÜHISTATUD';
+                    
+                    if (!start || !end) return null;
+                    
+                    const year = start.slice(0, 4);
+                    const month = months[start.slice(5, 7)];
+                    const day = start.slice(8, 10);
+                    const startTime = start.slice(11, 16);
+                    const endTime = end.slice(11, 16);
+                    
+                    return {
+                        eventId: eventId,
+                        year: year,
+                        month: month,
+                        day: day,
+                        startTime: startTime,
+                        endTime: endTime,
+                        dateString: `${day}. ${month} ${year}, ${startTime}-${endTime}`,
+                        isCancelled: isCancelled
+                    };
+                })
+                .filter(event => event !== null);
+
+            res.json(futureEvents);
+        } catch (error) {
+            console.error('Error fetching events by group:', error);
+            res.status(500).json({ error: 'Failed to fetch events' });
+        }
+    });
+
     app.post('/api/getrecurring-instances', async(req, res) => {
         const { eventId } = req.body;
         
