@@ -144,47 +144,57 @@
             getInfoBtn.disabled = true;
             
             try {
-                // Use the regular events API that returns single events (expanded recurring events)
-                const response = await fetch('/api/events', {
+                // Use the admin events API that returns all events without group filtering
+                const response = await fetch('/api/getevents-admin', {
                     headers: { 'Authorization': `Bearer ${jwtToken}` }
                 });
-                const eventsData = await response.json();
+                const events = await response.json();
                 
-                // Get future events for the selected group
-                const futureDates = [];
+                // Filter events for the selected group and get future dates
+                const groupEvents = events.filter(event => event.group === group);
                 const now = new Date();
+                const futureDates = [];
                 
-                if (eventsData.future && eventsData.future[group]) {
-                    eventsData.future[group].forEach(eventInfo => {
-                        // eventInfo format: [year, month, day, startTime, endTime, eventId, joined, isCancelled]
-                        const year = eventInfo[0];
-                        const monthName = eventInfo[1];
-                        const day = eventInfo[2];
-                        const startTime = eventInfo[3];
-                        const endTime = eventInfo[4];
-                        const eventId = eventInfo[5];
-                        const isCancelled = eventInfo[7];
-                        
-                        // Create date object for sorting
-                        const months = {
-                            'jaanuar': 0, 'veebruar': 1, 'märts': 2, 'aprill': 3,
-                            'mai': 4, 'juuni': 5, 'juuli': 6, 'august': 7,
-                            'september': 8, 'oktoober': 9, 'november': 10, 'detsember': 11
-                        };
-                        
-                        const monthIndex = months[monthName];
-                        const eventDate = new Date(year, monthIndex, parseInt(day));
-                        
-                        // Only include future events
-                        if (eventDate >= now.setHours(0, 0, 0, 0)) {
-                            futureDates.push({
-                                eventId: eventId,
-                                date: eventDate,
-                                dateString: `${day}. ${monthName} ${year}, ${startTime}-${endTime}`,
-                                isCancelled: isCancelled
+                for (const event of groupEvents) {
+                    if (event.recurring) {
+                        // Get instances for recurring events
+                        try {
+                            const instancesResponse = await fetch('/api/getrecurring-instances', {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${jwtToken}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ eventId: event.id })
                             });
+                            const instances = await instancesResponse.json();
+                            
+                            instances.forEach(instance => {
+                                const startDate = new Date(instance.start);
+                                if (startDate >= now) {
+                                    futureDates.push({
+                                        eventId: instance.id,
+                                        date: startDate,
+                                        dateString: formatDateString(startDate)
+                                    });
+                                }
+                            });
+                        } catch (err) {
+                            console.error('Error fetching recurring instances:', err);
                         }
-                    });
+                    } else {
+                        // Single events
+                        if (event.start) {
+                            const startDate = new Date(event.start);
+                            if (startDate >= now) {
+                                futureDates.push({
+                                    eventId: event.id,
+                                    date: startDate,
+                                    dateString: formatDateString(startDate)
+                                });
+                            }
+                        }
+                    }
                 }
                 
                 // Sort by date
@@ -198,11 +208,7 @@
                     futureDates.forEach(dateInfo => {
                         const option = document.createElement('option');
                         option.value = dateInfo.eventId;
-                        option.textContent = dateInfo.dateString + (dateInfo.isCancelled ? ' (TÜHISTATUD)' : '');
-                        if (dateInfo.isCancelled) {
-                            option.style.color = '#dc3545';
-                            option.style.fontStyle = 'italic';
-                        }
+                        option.textContent = dateInfo.dateString;
                         dateSelect.appendChild(option);
                     });
                     dateSelect.disabled = false;
@@ -212,6 +218,21 @@
                 console.error('Viga kuupäevade laadimisel:', error);
                 dateSelect.innerHTML = '<option value="">Viga kuupäevade laadimisel</option>';
             }
+        }
+
+        function formatDateString(date) {
+            const months = [
+                'jaanuar', 'veebruar', 'märts', 'aprill', 'mai', 'juuni',
+                'juuli', 'august', 'september', 'oktoober', 'november', 'detsember'
+            ];
+            
+            const day = date.getDate();
+            const month = months[date.getMonth()];
+            const year = date.getFullYear();
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            
+            return `${day}. ${month} ${year}, ${hours}:${minutes}`;
         }
 
         async function getLessonInfo() {
