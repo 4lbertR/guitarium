@@ -244,7 +244,7 @@
             const summaryTextSpan = document.createElement('span');
             
             if (isCancelled) {
-              summaryTextSpan.textContent = `${day}. ${month} ${year}, ${start}–${end} - TÜHISTATUD`;
+              summaryTextSpan.textContent = `${day}. ${month} ${year}, ${start}–${end} - TUNDI EI TOIMU`;
             } else {
               summaryTextSpan.textContent = `${day}. ${month} ${year}, ${start}–${end}`;
             }
@@ -395,7 +395,7 @@
         // Synchronous version for pre-fetched data
         function updateParticipantsDisplaySync(paragraphElement, result, userGroup, config) {
           if (result.cancelled) {
-            paragraphElement.textContent = 'Tund on tühistatud';
+            paragraphElement.textContent = 'Tundi ei toimu';
             return;
           }
           
