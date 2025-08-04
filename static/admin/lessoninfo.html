@@ -144,50 +144,47 @@
             getInfoBtn.disabled = true;
             
             try {
-                const response = await fetch('/api/getevents-admin', {
+                // Use the regular events API that returns single events (expanded recurring events)
+                const response = await fetch('/api/events', {
                     headers: { 'Authorization': `Bearer ${jwtToken}` }
                 });
-                const events = await response.json();
+                const eventsData = await response.json();
                 
-                // Filter events for the selected group and get future dates
-                const groupEvents = events.filter(event => event.group === group);
-                const now = new Date();
+                // Get future events for the selected group
                 const futureDates = [];
+                const now = new Date();
                 
-                for (const event of groupEvents) {
-                    if (event.recurring) {
-                        // Get instances for recurring events
-                        const instancesResponse = await fetch('/api/getrecurring-instances', {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${jwtToken}`,
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ eventId: event.id })
-                        });
-                        const instances = await instancesResponse.json();
+                if (eventsData.future && eventsData.future[group]) {
+                    eventsData.future[group].forEach(eventInfo => {
+                        // eventInfo format: [year, month, day, startTime, endTime, eventId, joined, isCancelled]
+                        const year = eventInfo[0];
+                        const monthName = eventInfo[1];
+                        const day = eventInfo[2];
+                        const startTime = eventInfo[3];
+                        const endTime = eventInfo[4];
+                        const eventId = eventInfo[5];
+                        const isCancelled = eventInfo[7];
                         
-                        instances.forEach(instance => {
-                            const startDate = new Date(instance.start);
-                            if (startDate >= now) {
-                                futureDates.push({
-                                    eventId: instance.id,
-                                    date: startDate,
-                                    dateString: formatDateString(startDate)
-                                });
-                            }
-                        });
-                    } else {
-                        // Single events
-                        const startDate = new Date(event.start);
-                        if (startDate >= now) {
+                        // Create date object for sorting
+                        const months = {
+                            'jaanuar': 0, 'veebruar': 1, 'märts': 2, 'aprill': 3,
+                            'mai': 4, 'juuni': 5, 'juuli': 6, 'august': 7,
+                            'september': 8, 'oktoober': 9, 'november': 10, 'detsember': 11
+                        };
+                        
+                        const monthIndex = months[monthName];
+                        const eventDate = new Date(year, monthIndex, parseInt(day));
+                        
+                        // Only include future events
+                        if (eventDate >= now.setHours(0, 0, 0, 0)) {
                             futureDates.push({
-                                eventId: event.id,
-                                date: startDate,
-                                dateString: formatDateString(startDate)
+                                eventId: eventId,
+                                date: eventDate,
+                                dateString: `${day}. ${monthName} ${year}, ${startTime}-${endTime}`,
+                                isCancelled: isCancelled
                             });
                         }
-                    }
+                    });
                 }
                 
                 // Sort by date
@@ -201,7 +198,11 @@
                     futureDates.forEach(dateInfo => {
                         const option = document.createElement('option');
                         option.value = dateInfo.eventId;
-                        option.textContent = dateInfo.dateString;
+                        option.textContent = dateInfo.dateString + (dateInfo.isCancelled ? ' (TÜHISTATUD)' : '');
+                        if (dateInfo.isCancelled) {
+                            option.style.color = '#dc3545';
+                            option.style.fontStyle = 'italic';
+                        }
                         dateSelect.appendChild(option);
                     });
                     dateSelect.disabled = false;
@@ -213,19 +214,92 @@
             }
         }
 
-        function formatDateString(date) {
-            const months = [
-                'jaanuar', 'veebruar', 'märts', 'aprill', 'mai', 'juuni',
-                'juuli', 'august', 'september', 'oktoober', 'november', 'detsember'
-            ];
+        async function getLessonInfo() {
+            const eventId = document.getElementById('date-select').value;
+            const group = document.getElementById('group-select').value;
+            const jwtToken = localStorage.getItem('jwtToken');
+            const container = document.getElementById('lesson-info-container');
             
-            const day = date.getDate();
-            const month = months[date.getMonth()];
-            const year = date.getFullYear();
-            const hours = date.getHours().toString().padStart(2, '0');
-            const minutes = date.getMinutes().toString().padStart(2, '0');
+            if (!eventId || !group) {
+                alert('Palun vali grupp ja kuupäev');
+                return;
+            }
             
-            return `${day}. ${month} ${year}, ${hours}:${minutes}`;
+            container.innerHTML = '<div class="loading">Laaditakse tunni infot...</div>';
+            
+            try {
+                const response = await fetch(`/api/getParticipants?eventId=${eventId}`, {
+                    headers: { 'Authorization': `Bearer ${jwtToken}` }
+                });
+                const data = await response.json();
+                
+                // Get selected date for display
+                const selectedOption = document.getElementById('date-select').selectedOptions[0];
+                const selectedDate = selectedOption.textContent;
+                
+                let infoHTML = `
+                    <div class="lesson-info">
+                        <h3>Tunni info - ${group}</h3>
+                        <div class="lesson-date">
+                            <strong>Kuupäev ja kellaaeg:</strong> ${selectedDate}
+                        </div>
+                `;
+                
+                if (data.cancelled) {
+                    infoHTML += `
+                        <div class="cancelled-lesson">
+                            ⚠️ TUND ON TÜHISTATUD ⚠️
+                        </div>
+                    `;
+                } else {
+                    const filledSpots = data.participants.length;
+                    const maxSpots = data.max === Infinity ? 'Piiratud' : data.max;
+                    const spotsLeft = data.max === Infinity ? '∞' : (data.max - filledSpots);
+                    
+                    infoHTML += `
+                        <div class="capacity-info">
+                            📊 Kohti täidetud: ${filledSpots}/${maxSpots} 
+                            ${data.max !== Infinity ? `(${spotsLeft} kohta vaba)` : ''}
+                        </div>
+                    `;
+                    
+                    if (data.participants.length > 0) {
+                        infoHTML += `
+                            <div class="participant-list">
+                                <h4>👥 Registreeritud osalejad (${data.participants.length}):</h4>
+                        `;
+                        
+                        data.participants.forEach((participant, index) => {
+                            infoHTML += `
+                                <div class="participant">
+                                    ${index + 1}. ${participant.fullname}
+                                </div>
+                            `;
+                        });
+                        
+                        infoHTML += '</div>';
+                    } else {
+                        infoHTML += `
+                            <div class="no-participants">
+                                😔 Sellele tunnile pole veel keegi registreeritud
+                            </div>
+                        `;
+                    }
+                }
+                
+                infoHTML += '</div>';
+                container.innerHTML = infoHTML;
+                
+            } catch (error) {
+                console.error('Viga tunni info laadimisel:', error);
+                container.innerHTML = `
+                    <div class="lesson-info">
+                        <div style="color: red; text-align: center;">
+                            ❌ Viga tunni info laadimisel
+                        </div>
+                    </div>
+                `;
+            }
         }
 
         async function getLessonInfo() {
