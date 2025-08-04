@@ -441,9 +441,40 @@
         console.error('Error initializing page:', error);
         localStorage.removeItem('jwtToken'); // Clear token if initialization fails
         window.location.href = '/'; // Redirect to login
-        document.getElementById('myText').textContent = '❌ Viga sündmuste laadimisel';
+                document.getElementById('myText').textContent = '❌ Viga sündmuste laadimisel';
       }
     }
+            async function checkAdminAccess() {
+            const jwtToken = localStorage.getItem('jwtToken');
+
+            if (!jwtToken) {
+                window.location.href = '/';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/isadmin', {
+                    headers: {
+                        'Authorization': `Bearer ${jwtToken}`
+                    }
+                });
+                const data = await response.json();
+                if (data.admin) {
+                    // If user is admin, redirect to admin panel
+                    window.location.href = '/admin/index.html';
+                    return;
+                }
+                // If not admin, continue with normal page initialization
+                initializePage();
+            } catch (error) {
+                console.error('Error checking admin status:', error);
+                // If there's an error, treat as non-admin and continue
+                initializePage();
+            }
+        }
+    document.addEventListener('DOMContentLoaded', checkAdminAccess);
+      
+    
             async function checkAdminAccess() {
             const jwtToken = localStorage.getItem('jwtToken');
 
