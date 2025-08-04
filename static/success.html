@@ -444,8 +444,32 @@
         document.getElementById('myText').textContent = '❌ Viga sündmuste laadimisel';
       }
     }
+            async function checkAdminAccess() {
+            const jwtToken = localStorage.getItem('jwtToken');
 
-    document.addEventListener('DOMContentLoaded', initializePage);
+            if (!jwtToken) {
+                window.location.href = '/';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/isadmin', {
+                    headers: {
+                        'Authorization': `Bearer ${jwtToken}`
+                    }
+                });
+                const data = await response.json();
+                if (!data.admin) {
+                    window.location.href = '/admin/index.html';
+                }
+            } catch (error) {
+                console.error('Error checking admin status:', error);
+                localStorage.removeItem('jwtToken');
+                window.location.href = '/';
+            }
+        }
+    document.addEventListener('DOMContentLoaded', checkAdminAccess, initializePage);
   </script>
+
 </body>
 </html>
