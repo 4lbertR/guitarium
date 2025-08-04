@@ -25,7 +25,9 @@
         if (!jwtToken) {window.location.href = '/';return;}
         try {const response = await fetch('/api/isadmin', {headers: {'Authorization': `Bearer ${jwtToken}`}});
             const data = await response.json();
-            if (!data.admin) {window.location.href = '/success.html';}
+                if (!data.admin) {
+                    window.location.href = '/index.html';
+                }
         } catch (error) {localStorage.removeItem('jwtToken');window.location.href = '/';}
       }
       document.addEventListener('DOMContentLoaded', checkAdminAccess);
