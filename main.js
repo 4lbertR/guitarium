@@ -610,7 +610,7 @@ function setupAppRoutes(app) {
                 maxResults: 100,
                 singleEvents: true,
                 orderBy: 'startTime',
-                timeMin: 0
+                timeMin: new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString(),
             });
 
             const months = {
