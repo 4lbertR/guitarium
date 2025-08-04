@@ -203,7 +203,7 @@
                 return;
             }
             
-            container.innerHTML = '<div class="loading">Laaditakse tunni infot...</div>';
+            container.innerHTML = '<div class="loading">Laen tunni infot...</div>';
             
             try {
                 const response = await fetch(`/api/getParticipants?eventId=${eventId}`, {
@@ -217,7 +217,7 @@
                 
                 let infoHTML = `
                     <div class="lesson-info">
-                        <h3>Tunni info - ${group}</h3>
+                        <h3>Tunni info - ${group} grupp</h3>
                         <div class="lesson-date">
                             <strong>Kuupäev ja kellaaeg:</strong> ${selectedDate}
                         </div>
@@ -237,7 +237,7 @@
                     infoHTML += `
                         <div class="capacity-info">
                             📊 Kohti täidetud: ${filledSpots}/${maxSpots} 
-                            ${data.max !== Infinity ? `(${spotsLeft} kohta vaba)` : ''}
+                            ${data.max !== Infinity ? `(${spotsLeft} vaba kohta)` : ''}
                         </div>
                     `;
                     
