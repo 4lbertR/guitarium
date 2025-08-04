@@ -1047,6 +1047,9 @@ function setupAppRoutes(app) {
     app.get('/admin/bulkadd.html', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'bulkadd.html'));
     });
+    app.get('/admin/lessoninfo.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'static', 'admin', 'lessoninfo.html'));
+    });
 }
 
 module.exports = { success: setupAppRoutes };
