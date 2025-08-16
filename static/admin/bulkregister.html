@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="et">
 <head>
     <link rel="stylesheet" href="/admin/styles.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register Users</title>
+    <title>Registreeri kasutajaid</title>
 
 </head>
 <body>
@@ -12,7 +12,7 @@
         <button onclick="window.location.href='/admin/index.html'">Tagasi</button>
     </header>
     <div class="container">
-        <h2>Registreeri kasutajaid tundidele</h2>
+        <h2>Registreeri kasutajaid tundidesse</h2>
         <label for="users">Vali kasutaja:</label>
         <select id="users"></select>
         <div id="lessons-container" style="margin-top: 20px;"></div>
@@ -25,7 +25,9 @@
         if (!jwtToken) {window.location.href = '/';return;}
         try {const response = await fetch('/api/isadmin', {headers: {'Authorization': `Bearer ${jwtToken}`}});
             const data = await response.json();
-            if (!data.admin) {window.location.href = '/success.html';}
+                if (!data.admin) {
+                    window.location.href = '/index.html';
+                }
         } catch (error) {localStorage.removeItem('jwtToken');window.location.href = '/';}
       }
       document.addEventListener('DOMContentLoaded', checkAdminAccess);
@@ -84,7 +86,7 @@
                 checkbox.id = `lesson-${lesson.id}`;
                 checkbox.value = lesson.id;
                 
-                // Check if lesson is already registered
+                // Kontrolli, kas kasutaja on juba registreeritud
                 const isRegistered = lesson.isJoined === true;
                 if (isRegistered) {
                   checkbox.checked = true;
@@ -95,7 +97,7 @@
                 label.textContent = lesson.name || `Tund ${lesson.id}`;
                 label.style.marginLeft = '10px';
                 
-                // Style registered lessons differently
+                // Stiili registreeritud tunde erinevalt
                 if (isRegistered) {
                   label.style.color = '#28a745';
                   label.style.fontWeight = 'bold';
@@ -109,7 +111,7 @@
               registerBtn.style.display = 'block';
               
             } catch (error) {
-              console.error('Error fetching user lessons:', error);
+              console.error('Viga kasutaja tundide laadimisel:', error);
               lessonsContainer.innerHTML = '<p>Viga tundide laadimisel</p>';
               registerBtn.style.display = 'none';
             }
@@ -152,14 +154,14 @@
                 document.getElementById('message').textContent = result.message;
                 document.getElementById('message').style.color = 'green';
                 
-                // Refresh the lesson list to show updated availability
+                // Värskenda tundide nimekirja, et näidata uuendatud saadavust
                 document.getElementById('users').dispatchEvent(new Event('change'));
             } else {
                 document.getElementById('message').textContent = result.message || 'Registreerimine ebaõnnestus';
                 document.getElementById('message').style.color = 'red';
             }
         } catch (error) {
-            console.error('Error registering for lessons:', error);
+            console.error('Viga tundidele registreerimisel:', error);
             document.getElementById('message').textContent = 'Tundidele registreerimine ebaõnnestus.';
             document.getElementById('message').style.color = 'red';
         }

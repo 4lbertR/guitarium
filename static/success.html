@@ -142,7 +142,9 @@
   <ul id="pastEventList"></ul>
 
   <p id="myText">Laen...</p>
-
+      <footer style="position: fixed; bottom: 10px; width: 100%; text-align: center; font-size: 10px; color: #666;">
+    Vigade või küsimuste tekkimisel võtke ühendust albert.reinman@gmail.com / julia@guitarium.ee
+  </footer>
   <script>
     // Get the JWT token from localStorage
     let jwtToken = localStorage.getItem('jwtToken');
@@ -244,7 +246,7 @@
             const summaryTextSpan = document.createElement('span');
             
             if (isCancelled) {
-              summaryTextSpan.textContent = `${day}. ${month} ${year}, ${start}–${end} - TÜHISTATUD`;
+              summaryTextSpan.textContent = `${day}. ${month} ${year}, ${start}–${end} - TUNDI EI TOIMU`;
             } else {
               summaryTextSpan.textContent = `${day}. ${month} ${year}, ${start}–${end}`;
             }
@@ -395,7 +397,7 @@
         // Synchronous version for pre-fetched data
         function updateParticipantsDisplaySync(paragraphElement, result, userGroup, config) {
           if (result.cancelled) {
-            paragraphElement.textContent = 'Tund on tühistatud';
+            paragraphElement.textContent = 'Tundi ei toimu';
             return;
           }
           
@@ -441,11 +443,39 @@
         console.error('Error initializing page:', error);
         localStorage.removeItem('jwtToken'); // Clear token if initialization fails
         window.location.href = '/'; // Redirect to login
-        document.getElementById('myText').textContent = '❌ Viga sündmuste laadimisel';
+                document.getElementById('myText').textContent = '❌ Viga sündmuste laadimisel';
       }
     }
+            async function checkAdminAccess() {
+            const jwtToken = localStorage.getItem('jwtToken');
 
-    document.addEventListener('DOMContentLoaded', initializePage);
+            if (!jwtToken) {
+                window.location.href = '/';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/isadmin', {
+                    headers: {
+                        'Authorization': `Bearer ${jwtToken}`
+                    }
+                });
+                const data = await response.json();
+                if (data.admin) {
+                    // If user is admin, redirect to admin panel
+                    window.location.href = '/admin/index.html';
+                    return;
+                }
+                // If not admin, continue with normal page initialization
+                initializePage();
+            } catch (error) {
+                console.error('Error checking admin status:', error);
+                // If there's an error, treat as non-admin and continue
+                initializePage();
+            }
+        }
+    document.addEventListener('DOMContentLoaded', checkAdminAccess);
   </script>
+
 </body>
 </html>

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="et">
 <head>
     <link rel="stylesheet" href="/admin/styles.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bulk Add Accounts</title>
+    <title>Hulgaga kontode lisamine</title>
 </head>
 <body>
     <header>
@@ -15,24 +15,24 @@
 
         <!-- Fields for bulk add -->
         <div class="bulk-add-fields">
-            <label for="fullnameColumn">Täisnimi kolumn:</label>
+            <label for="fullnameColumn">Täisnime tulp:</label>
             <input type="text" id="fullnameColumn" placeholder="Näiteks: A">
 
-            <label for="passwordColumn">Parool kolumn:</label>
+            <label for="passwordColumn">Parooli tulp:</label>
             <input type="text" id="passwordColumn" placeholder="Näiteks: B">
 
-            <label for="groupColumn">Grupp kolumn:</label>
+            <label for="groupColumn">Gruppi kolumn:</label>
             <input type="text" id="groupColumn" placeholder="Näiteks: C">
 
-            <label for="spreadsheetLink">Google Sheets Link:</label>
-            <input type="text" id="spreadsheetLink" placeholder="Paste the entire Google Sheets link">
+            <label for="spreadsheetLink">Google Sheets link:</label>
+            <input type="text" id="spreadsheetLink" placeholder="Kleepige siia kogu Google Sheets link">
         </div>
 
-        <button id="loadAccountsButton">Load Accounts from Google Sheets</button>
+        <button id="loadAccountsButton">Laadi kontod Google Sheets-ist</button>
     </div>
 
     <script>
-        // Check admin access on page load
+        // Kontrolli administraatori ligipääsu lehel laadimisel
         async function checkAdminAccess() {
             const jwtToken = localStorage.getItem('jwtToken');
             if (!jwtToken) {
@@ -44,9 +44,9 @@
                     headers: { 'Authorization': `Bearer ${jwtToken}` }
                 });
                 const data = await response.json();
-                if (!data.admin) {
-                    window.location.href = '/success.html';
-                }
+                 if (!data.admin) {
+                    window.location.href = '/index.html';
+                }
             } catch (error) {
                 localStorage.removeItem('jwtToken');
                 window.location.href = '/';
@@ -67,17 +67,17 @@
                 return;
             }
 
-            // Extract the spreadsheetId from the link
+            // Väljavõtte spreadsheetId link-ist
             const match = spreadsheetLink.match(/\/d\/([a-zA-Z0-9-_]+)/);
             if (!match || !match[1]) {
-                messageDiv.textContent = 'Invalid Google Sheets link!';
+                messageDiv.textContent = 'Vigane Google Sheets link!';
                 messageDiv.style.color = 'red';
                 return;
             }
             const spreadsheetId = match[1];
 
             try {
-                messageDiv.textContent = 'Loading accounts from Google Sheets...';
+                messageDiv.textContent = 'Kontode laadimine Google Sheets-ist...';
                 messageDiv.style.color = 'blue';
 
                 const response = await fetch('/api/bulk-load-accounts', {
@@ -97,17 +97,17 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    messageDiv.innerHTML = `Successfully loaded ${data.count} accounts from Google Sheets. ${data.errors || 0} errors.`;
+                    messageDiv.innerHTML = `Edukalt laaditud ${data.count} kontot Google Sheets-ist. ${data.skipped || 0} kontot vahele jäetud (juba olemas). ${data.errors || 0} viga.`;
                     messageDiv.style.color = 'green';
                     if (data.errorDetails && data.errorDetails.length > 0) {
-                        messageDiv.innerHTML += '<br>Errors: ' + data.errorDetails.join('<br>');
+                        messageDiv.innerHTML += '<br>Vead: ' + data.errorDetails.join('<br>');
                     }
                 } else {
-                    messageDiv.textContent = `Error: ${data.message}`;
+                    messageDiv.textContent = `Viga: ${data.message}`;
                     messageDiv.style.color = 'red';
                 }
             } catch (error) {
-                messageDiv.textContent = `Error loading accounts: ${error.message}`;
+                messageDiv.textContent = `Viga kontode laadimisel: ${error.message}`;
                 messageDiv.style.color = 'red';
             }
         }

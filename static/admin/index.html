@@ -11,18 +11,27 @@
     <form action="/admin/createacc.html">
         <button>Loo konto</button>
     </form>
+    <form action="/admin/bulkadd.html">
+        <button>Loo google sheetsist</button>
+    </form>
         <form action="/admin/editacc.html">
         <button>Muuda kasutaja andmeid</button>
     </form>
-    <form action="/admin/createlesson.html">
-        <button>Lisa tund</button>
+    <form action="/admin/bulkregister.html">
+        <button>Registreeri tundidesse</button>
     </form>
     <form action="/admin/delgroup.html">
         <button>Kustuta grupp</button>
     </form>
-    <form action="/admin/bulkadd.html">
-        <button>Impotri google sheetsist</button>
+        <form action="/admin/createlesson.html">
+        <button>Lisa tund</button>
     </form>
+        </form>
+        <form action="/admin/lessoninfo.html">
+        <button>Tunni info</button>
+    </form>
+
+
 
     <script>
         async function checkAdminAccess() {
@@ -40,9 +49,9 @@
                     }
                 });
                 const data = await response.json();
-                if (!data.admin) {
-                    window.location.href = '/success.html';
-                }
+                if (!data.admin) {
+                    window.location.href = '/index.html';
+                }
             } catch (error) {
                 console.error('Error checking admin status:', error);
                 localStorage.removeItem('jwtToken');

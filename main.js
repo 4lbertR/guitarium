@@ -57,7 +57,7 @@ function authenticateToken(req, res, next) {
 }
 
 function requireAdmin(req, res, next) {
-    if (req.fullname && admins.includes(req.fullname)) {
+    if (req.group== 'admin') {
         next();
     } else {
         return res.status(403).json({ message: 'Admin access required' });
@@ -593,6 +593,69 @@ function setupAppRoutes(app) {
         res.json(events);
     });
 
+    app.get('/api/getevents-by-group', async(req, res) => {
+        const { group } = req.query;
+        if (!group) {
+            return res.status(400).json({ error: 'Group parameter is required' });
+        }
+        
+        try {
+            const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
+            const authClient = await auth.getClient();
+            const calendar = google.calendar({ version: 'v3', auth: authClient });
+
+            const now = new Date();
+            const result = await calendar.events.list({
+                calendarId,
+                maxResults: 100,
+                singleEvents: true,
+                orderBy: 'startTime',
+                timeMin: new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString(),
+            });
+
+            const months = {
+                '01': 'jaanuar', '02': 'veebruar', '03': 'märts', '04': 'aprill',
+                '05': 'mai', '06': 'juuni', '07': 'juuli', '08': 'august',
+                '09': 'september', '10': 'oktoober', '11': 'november', '12': 'detsember'
+            };
+
+            const futureEvents = (result.data.items || [])
+                .filter(event => event.summary === group)
+                .map(event => {
+                    const start = event.start?.dateTime;
+                    const end = event.end?.dateTime;
+                    const eventId = event.id;
+                    const eventDescription = event.description || '';
+                    const isCancelled = eventDescription.trim() === 'TÜHISTATUD';
+                    
+                    if (!start || !end) return null;
+                    
+                    const year = start.slice(0, 4);
+                    const month = months[start.slice(5, 7)];
+                    const day = start.slice(8, 10);
+                    const startTime = start.slice(11, 16);
+                    const endTime = end.slice(11, 16);
+                    
+                    return {
+                        eventId: eventId,
+                        year: year,
+                        month: month,
+                        day: day,
+                        startTime: startTime,
+                        endTime: endTime,
+                        dateString: `${day}. ${month} ${year}, ${startTime}-${endTime}`,
+                        isCancelled: isCancelled
+                    };
+                })
+                .filter(event => event !== null);
+
+            res.json(futureEvents);
+        } catch (error) {
+            console.error('Error fetching events by group:', error);
+            res.status(500).json({ error: 'Failed to fetch events' });
+        }
+    });
+
     app.post('/api/getrecurring-instances', async(req, res) => {
         const { eventId } = req.body;
         
@@ -772,6 +835,7 @@ function setupAppRoutes(app) {
 
             let successCount = 0;
             let errorCount = 0;
+            let skippedCount = 0;
             const errors = [];
 
             // Skip header row
@@ -791,6 +855,9 @@ function setupAppRoutes(app) {
                     const result = await createAccount(fullname, password, group);
                     if (result.success) {
                         successCount++;
+                    } else if (result.message === 'User with this full name already exists.') {
+                        // Skip duplicates without treating as error
+                        skippedCount++;
                     } else {
                         errorCount++;
                         errors.push(`Row ${i + 1}: ${result.message}`);
@@ -804,9 +871,10 @@ function setupAppRoutes(app) {
             res.json({
                 success: true,
                 count: successCount,
+                skipped: skippedCount,
                 errors: errorCount,
                 errorDetails: errors,
-                message: `Loaded ${successCount} accounts successfully. ${errorCount} errors.`
+                message: `Loaded ${successCount} accounts successfully. ${skippedCount} accounts skipped (already exist). ${errorCount} errors.`
             });
         } catch (error) {
             res.status(500).json({ 
@@ -1041,6 +1109,9 @@ function setupAppRoutes(app) {
     });
     app.get('/admin/bulkadd.html', (req, res) => {
         res.sendFile(path.join(__dirname, 'static', 'admin', 'bulkadd.html'));
+    });
+    app.get('/admin/lessoninfo.html', (req, res) => {
+        res.sendFile(path.join(__dirname, 'static', 'admin', 'lessoninfo.html'));
     });
 }
 
