@@ -21,7 +21,7 @@
     <label for="select-all-lessons" style="font-weight: bold;">Vali kõik tunnid</label>
   </div>
   <div id="lessons-container" style="margin-top: 10px;"></div>
-  <button id="register-btn" onclick="registerForLessons()" style="margin-top: 20px; display: none;">Registreeri valitud tundidele</button>
+  <button id="register-btn" onclick="registerForLessons()" style="margin-top: 20px; display: none;">Registreeri valitud tundidesse</button>
   <div id="message" style="margin-top: 20px;"></div>
     </div>
     <script>
@@ -175,7 +175,7 @@
             return;
         }
         
-        document.getElementById('message').textContent = 'Registreeritakse kasutajat tundidele...';
+        document.getElementById('message').textContent = 'Kasutajat registreeritakse tundidesse...';
         
         try {
             const response = await fetch('/api/registerforlesson', {
@@ -199,8 +199,8 @@
                 document.getElementById('message').style.color = 'red';
             }
         } catch (error) {
-            console.error('Viga tundidele registreerimisel:', error);
-            document.getElementById('message').textContent = 'Tundidele registreerimine ebaõnnestus.';
+            console.error('Viga tundidessse registreerimisel:', error);
+            document.getElementById('message').textContent = 'Tundidesse registreerimine ebaõnnestus.';
             document.getElementById('message').style.color = 'red';
         }
       }
