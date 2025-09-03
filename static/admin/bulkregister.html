@@ -16,7 +16,11 @@
   <label for="users">Vali kasutaja:</label>
   <select id="users"></select>
   <div id="user-group" style="margin-top: 10px; font-weight: bold;"></div>
-  <div id="lessons-container" style="margin-top: 20px;"></div>
+  <div style="margin-top: 20px;">
+    <input type="checkbox" id="select-all-lessons" style="margin-right: 8px;">
+    <label for="select-all-lessons" style="font-weight: bold;">Vali kõik tunnid</label>
+  </div>
+  <div id="lessons-container" style="margin-top: 10px;"></div>
   <button id="register-btn" onclick="registerForLessons()" style="margin-top: 20px; display: none;">Registreeri valitud tundidele</button>
   <div id="message" style="margin-top: 20px;"></div>
     </div>
@@ -55,6 +59,9 @@
       }
       
       document.getElementById('users').addEventListener('change', async function() {
+        // Reset select all checkbox
+        const selectAll = document.getElementById('select-all-lessons');
+        selectAll.checked = false;
         const user = this.value;
         const lessonsContainer = document.getElementById('lessons-container');
         const registerBtn = document.getElementById('register-btn');
@@ -86,7 +93,7 @@
               let lessons = await response.json();
 
               lessonsContainer.innerHTML = '<h3>Tunnid:</h3>';
-
+ 
               if (!Array.isArray(lessons) || lessons.length === 0) {
                 lessonsContainer.innerHTML += '<p>Tulevasi tunde ei leitud.</p>';
                 registerBtn.style.display = 'none';
@@ -103,6 +110,7 @@
 
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
+                checkbox.className = 'lesson-checkbox';
                 checkbox.id = `lesson-${lesson.id}`;
                 checkbox.value = lesson.id;
 
@@ -127,6 +135,14 @@
                 checkboxDiv.appendChild(label);
                 lessonsContainer.appendChild(checkboxDiv);
               });
+
+              // Add select all event listener
+              selectAll.onchange = function() {
+                const checkboxes = document.querySelectorAll('.lesson-checkbox');
+                checkboxes.forEach(cb => {
+                  if (!cb.disabled) cb.checked = selectAll.checked;
+                });
+              };
 
               registerBtn.style.display = 'block';
 

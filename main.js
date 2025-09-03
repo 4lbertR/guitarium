@@ -922,49 +922,56 @@ function setupAppRoutes(app) {
 
     app.get('/api/getuserlessons', async(req, res) => {
         const { user } = req.query;
-        
+
         // Get user info
         const db = await mysql.createConnection(DB_CONFIG);
         const [userRows] = await db.execute('SELECT id, grupp FROM users WHERE fullname = ?', [user]);
         await db.end();
-        
+
         if (userRows.length === 0) {
             return res.json([]);
         }
-        
+
         const userId = userRows[0].id;
         const userGroup = userRows[0].grupp;
-        
+
         // Get events from Google Calendar for this user's group
         const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
         const authClient = await auth.getClient();
         const calendar = google.calendar({ version: 'v3', auth: authClient });
 
         const now = new Date();
-        const result = await calendar.events.list({
-            calendarId,
-            maxResults: 100,
-            singleEvents: true,
-            orderBy: 'startTime',
-            timeMin: now.toISOString()
-        });
+        let allEvents = [];
+        let pageToken = undefined;
+        do {
+            const result = await calendar.events.list({
+                calendarId,
+                maxResults: 100,
+                singleEvents: true,
+                orderBy: 'startTime',
+                timeMin: now.toISOString(),
+                pageToken
+            });
+            allEvents = allEvents.concat(result.data.items || []);
+            pageToken = result.data.nextPageToken;
+        } while (pageToken);
 
         // Filter events for this user's group and format them
-        const lessons = (result.data.items || [])
+        const lessons = allEvents
             .filter(event => event.summary === userGroup)
             .map(event => {
                 const start = new Date(event.start?.dateTime);
                 const end = new Date(event.end?.dateTime);
-                
+
                 // Convert to Estonian time (EEST/EET)
                 const estonianStart = new Date(start.toLocaleString("en-US", {timeZone: "Europe/Tallinn"}));
                 const estonianEnd = new Date(end.toLocaleString("en-US", {timeZone: "Europe/Tallinn"}));
-                
+
                 const joined = (event.description || '')
                     .split(/\s+/)
                     .filter(x => /^\d+$/.test(x.trim()))
                     .map(Number);
-                
+
                 return {
                     id: event.id,
                     name: `${estonianStart.getDate().toString().padStart(2, '0')}.${(estonianStart.getMonth() + 1).toString().padStart(2, '0')}.${estonianStart.getFullYear()} ${estonianStart.getHours().toString().padStart(2, '0')}:${estonianStart.getMinutes().toString().padStart(2, '0')}-${estonianEnd.getHours().toString().padStart(2, '0')}:${estonianEnd.getMinutes().toString().padStart(2, '0')}`,
