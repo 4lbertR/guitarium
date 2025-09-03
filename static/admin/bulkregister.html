@@ -93,8 +93,7 @@
                 return;
               }
 
-              // Limit to max 25 lessons
-              lessons = lessons.slice(0, 25);
+              // Remove artificial lesson limit for admin view
 
               lessons.forEach(lesson => {
                 const checkboxDiv = document.createElement('div');
