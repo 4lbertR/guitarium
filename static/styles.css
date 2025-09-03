@@ -1,6 +1,6 @@
 /* Base layout and typography */
 body {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: sans-serif;
   font-size: 14px;
   line-height: 1.6;
   color: #222;
@@ -106,7 +106,7 @@ select {
     max-width: 300px;
     padding: 12px 16px;
     font-size: 16px;
-    font-family: Arial, sans-serif;
+    font-family: sans-serif;
     border: 2px solid #ddd;
     border-radius: 8px;
     background-color: #fff;
@@ -171,7 +171,7 @@ input[type="time"] {
     max-width: 200px;
     padding: 12px 16px;
     font-size: 16px;
-    font-family: Arial, sans-serif;
+    font-family: sans-serif;
     border: 2px solid #ddd;
     border-radius: 8px;
     background-color: #fff;
@@ -201,7 +201,7 @@ input[type="date"] {
     max-width: 200px;
     padding: 12px 16px;
     font-size: 16px;
-    font-family: Arial, sans-serif;
+    font-family: sans-serif;
     border: 2px solid #ddd;
     border-radius: 8px;
     background-color: #fff;
