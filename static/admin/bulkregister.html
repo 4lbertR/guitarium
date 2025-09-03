@@ -13,11 +13,12 @@
     </header>
     <div class="container">
         <h2>Registreeri kasutajaid tundidesse</h2>
-        <label for="users">Vali kasutaja:</label>
-        <select id="users"></select>
-        <div id="lessons-container" style="margin-top: 20px;"></div>
-        <button id="register-btn" onclick="registerForLessons()" style="margin-top: 20px; display: none;">Registreeri valitud tundidele</button>
-        <div id="message" style="margin-top: 20px;"></div>
+  <label for="users">Vali kasutaja:</label>
+  <select id="users"></select>
+  <div id="user-group" style="margin-top: 10px; font-weight: bold;"></div>
+  <div id="lessons-container" style="margin-top: 20px;"></div>
+  <button id="register-btn" onclick="registerForLessons()" style="margin-top: 20px; display: none;">Registreeri valitud tundidele</button>
+  <div id="message" style="margin-top: 20px;"></div>
     </div>
     <script>
       async function checkAdminAccess() {
@@ -57,67 +58,89 @@
         const user = this.value;
         const lessonsContainer = document.getElementById('lessons-container');
         const registerBtn = document.getElementById('register-btn');
-        
+        const userGroupDiv = document.getElementById('user-group');
+
         if (user) {
             try {
+              // Get user group
+              const userInfoResponse = await fetch('/api/getuser', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user })
+              });
+              const userInfo = await userInfoResponse.json();
+              if (userInfo.success && userInfo.group) {
+                userGroupDiv.textContent = `Kasutaja grupp: ${userInfo.group}`;
+              } else {
+                userGroupDiv.textContent = '';
+              }
+
               const response = await fetch(`/api/getuserlessons?user=${user}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
                 }
               });
-              const lessons = await response.json();
-              
+              let lessons = await response.json();
+
               lessonsContainer.innerHTML = '<h3>Tunnid:</h3>';
-              
-              if (lessons.length === 0) {
+
+              if (!Array.isArray(lessons) || lessons.length === 0) {
                 lessonsContainer.innerHTML += '<p>Tulevasi tunde ei leitud.</p>';
                 registerBtn.style.display = 'none';
                 return;
               }
-              
+
+              // Limit to max 25 lessons
+              lessons = lessons.slice(0, 25);
+
               lessons.forEach(lesson => {
                 const checkboxDiv = document.createElement('div');
                 checkboxDiv.style.marginBottom = '10px';
                 checkboxDiv.style.display = 'flex';
                 checkboxDiv.style.alignItems = 'center';
-                
+
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.id = `lesson-${lesson.id}`;
                 checkbox.value = lesson.id;
-                
+
                 // Kontrolli, kas kasutaja on juba registreeritud
                 const isRegistered = lesson.isJoined === true;
                 if (isRegistered) {
                   checkbox.checked = true;
                 }
-                
+
                 const label = document.createElement('label');
                 label.htmlFor = `lesson-${lesson.id}`;
                 label.textContent = lesson.name || `Tund ${lesson.id}`;
                 label.style.marginLeft = '10px';
-                
+
                 // Stiili registreeritud tunde erinevalt
                 if (isRegistered) {
                   label.style.color = '#28a745';
                   label.style.fontWeight = 'bold';
                 }
-                
+
                 checkboxDiv.appendChild(checkbox);
                 checkboxDiv.appendChild(label);
                 lessonsContainer.appendChild(checkboxDiv);
               });
-              
+
               registerBtn.style.display = 'block';
-              
+
             } catch (error) {
               console.error('Viga kasutaja tundide laadimisel:', error);
               lessonsContainer.innerHTML = '<p>Viga tundide laadimisel</p>';
               registerBtn.style.display = 'none';
+              userGroupDiv.textContent = '';
             }
         } else {
             lessonsContainer.innerHTML = '';
             registerBtn.style.display = 'none';
+            userGroupDiv.textContent = '';
         }
       });
 
