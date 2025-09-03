@@ -406,10 +406,10 @@
           const currentCount = participants.length;
           
           let displayText = '';
-          if (maxParticipants !== Infinity) {
-            displayText = `${currentCount} inimest on liitunud tunniga:\n`;
+          if (currentCount == 1) {
+            displayText = `${currentCount} õpilane on liitunud tunniga:\n`;
           } else {
-            displayText = `${currentCount} inimest on liitunud tunniga\n`;
+            displayText = `${currentCount} õpilast on liitunud tunniga\n`;
           }
           
           if (participants.length > 0) {
