@@ -360,7 +360,20 @@ async function getParticipants(eventId) {
     await db.end();
 
     const participants = rows.map(row => {
-        const trimmed = row.fullname.replace(/(^\S+)\s(\S)\S*/, '$1 $2');
+        const nameParts = row.fullname.trim().split(/\s+/);
+        let trimmed;
+        
+        if (nameParts.length === 1) {
+            // Only one name
+            trimmed = nameParts[0];
+        } else {
+            // All names except last + abbreviated last name
+            const allButLast = nameParts.slice(0, -1).join(' ');
+            const lastName = nameParts[nameParts.length - 1];
+            const abbreviatedLastName = lastName.charAt(0);
+            trimmed = `${allButLast} ${abbreviatedLastName}`;
+        }
+        
         return { fullname: trimmed };
     });
 
