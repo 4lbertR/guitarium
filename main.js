@@ -137,7 +137,9 @@ async function listEvents(groupFilter, userId = null) {
             end.slice(11, 16),
             eventId,
             joined,
-            isCancelled
+            isCancelled,
+            null, // crossGroupName placeholder (index 8)
+            start // Add full start datetime for sorting (index 9)
         ];
 
         const startTime = new Date(start);
@@ -156,7 +158,7 @@ async function listEvents(groupFilter, userId = null) {
                 if (!target[crossGroupKey]) target[crossGroupKey] = [];
                 // Add group name to the event data for display
                 const crossGroupWhen = [...when];
-                crossGroupWhen[8] = desc; // Add original group name as 9th element
+                crossGroupWhen[8] = desc; // Add original group name as crossGroupName
                 target[crossGroupKey].push(crossGroupWhen);
             }
         } else {
@@ -166,9 +168,9 @@ async function listEvents(groupFilter, userId = null) {
         }
     });
 
-    // For user-specific requests, flatten cross-group events into main group
+    // For user-specific requests, flatten cross-group events into main group and sort by date
     if (userId && groupFilter) {
-        const flattenEvents = (events) => {
+        const flattenAndSortEvents = (events) => {
             const mainGroupEvents = events[groupFilter] || [];
             const crossGroupEvents = [];
             
@@ -179,11 +181,22 @@ async function listEvents(groupFilter, userId = null) {
                 }
             });
             
-            return [...mainGroupEvents, ...crossGroupEvents];
+            // Combine all events and sort by datetime
+            const allEvents = [...mainGroupEvents, ...crossGroupEvents];
+            
+            // Sort by the datetime (index 9)
+            allEvents.sort((a, b) => {
+                const dateA = new Date(a[9]);
+                const dateB = new Date(b[9]);
+                return dateA - dateB;
+            });
+            
+            // Remove the sorting datetime from the final result but keep crossGroupName
+            return allEvents.map(event => event.slice(0, 9));
         };
 
-        const futureFlattened = flattenEvents(futevents);
-        const pastFlattened = flattenEvents(pastevents);
+        const futureFlattened = flattenAndSortEvents(futevents);
+        const pastFlattened = flattenAndSortEvents(pastevents);
 
         return {
             future: futureFlattened,
