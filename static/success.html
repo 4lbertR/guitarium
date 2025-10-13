@@ -231,7 +231,7 @@
 
           // Process events in parallel without await in the loop
           const eventElements = list.map((event, index) => {
-            const [year, month, day, start, end, eventId, joined, isCancelled] = event;
+            const [year, month, day, start, end, eventId, joined, isCancelled, crossGroupName] = event;
             let hasJoined = joined.includes(userId);
 
             const details = document.createElement('details');
@@ -244,10 +244,17 @@
             const summary = document.createElement('summary');
             const summaryTextSpan = document.createElement('span');
             
+            let displayText = `${day}. ${month} ${year}, ${start}–${end}`;
+            
+            // Add group name if this is a cross-group lesson
+            if (crossGroupName && crossGroupName !== group) {
+              displayText += ` (${crossGroupName})`;
+            }
+            
             if (isCancelled) {
-              summaryTextSpan.textContent = `${day}. ${month} ${year}, ${start}–${end} - TUNDI EI TOIMU`;
+              summaryTextSpan.textContent = displayText + ' - TUNDI EI TOIMU';
             } else {
-              summaryTextSpan.textContent = `${day}. ${month} ${year}, ${start}–${end}`;
+              summaryTextSpan.textContent = displayText;
             }
 
             summary.appendChild(summaryTextSpan);
@@ -478,3 +485,4 @@
 
 </body>
 </html>
+``` 

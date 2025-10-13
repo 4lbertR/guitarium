@@ -81,7 +81,7 @@ async function checkLogin(fullname, password) {
     }
 }
 
-async function listEvents(groupFilter) {
+async function listEvents(groupFilter, userId = null) {
     const months = {
         '01': 'jaanuar',
         '02': 'veebruar',
@@ -142,9 +142,54 @@ async function listEvents(groupFilter) {
 
         const startTime = new Date(start);
         const target = startTime > now ? futevents : pastevents;
-        if (!target[desc]) target[desc] = [];
-        target[desc].push(when);
+        
+        // If userId is provided, show lessons from user's group AND lessons where user is registered
+        if (userId && groupFilter) {
+            // Always include lessons from user's main group
+            if (desc === groupFilter) {
+                if (!target[desc]) target[desc] = [];
+                target[desc].push(when);
+            }
+            // Also include lessons from other groups where user is registered
+            else if (joined.includes(userId)) {
+                const crossGroupKey = `${groupFilter}_cross_${desc}`;
+                if (!target[crossGroupKey]) target[crossGroupKey] = [];
+                // Add group name to the event data for display
+                const crossGroupWhen = [...when];
+                crossGroupWhen[8] = desc; // Add original group name as 9th element
+                target[crossGroupKey].push(crossGroupWhen);
+            }
+        } else {
+            // Original logic for admin or non-user-specific requests
+            if (!target[desc]) target[desc] = [];
+            target[desc].push(when);
+        }
     });
+
+    // For user-specific requests, flatten cross-group events into main group
+    if (userId && groupFilter) {
+        const flattenEvents = (events) => {
+            const mainGroupEvents = events[groupFilter] || [];
+            const crossGroupEvents = [];
+            
+            Object.keys(events).forEach(key => {
+                if (key.startsWith(`${groupFilter}_cross_`)) {
+                    crossGroupEvents.push(...events[key]);
+                    delete events[key];
+                }
+            });
+            
+            return [...mainGroupEvents, ...crossGroupEvents];
+        };
+
+        const futureFlattened = flattenEvents(futevents);
+        const pastFlattened = flattenEvents(pastevents);
+
+        return {
+            future: futureFlattened,
+            past: pastFlattened
+        };
+    }
 
     return {
         future: groupFilter ? futevents[groupFilter] || [] : futevents,
@@ -360,8 +405,9 @@ function setupAppRoutes(app) {
 
     app.get('/api/events', async(req, res) => {
         const group = req.group || null;
+        const userId = req.userId || null;
         try {
-            const events = await listEvents(group);
+            const events = await listEvents(group, userId);
             res.json(events);
         } catch (err) {
             console.error('Error fetching events:', err.message);
