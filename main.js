@@ -118,8 +118,7 @@ async function listEvents(groupFilter, userId = null) {
         const desc = event.summary;
         const eventId = event.id;
         const eventDescription = event.description || '';
-        
-        // Check if event is cancelled
+
         const isCancelled = eventDescription.trim() === 'TÜHISTATUD';
         
         const joined = isCancelled ? [] : eventDescription
@@ -138,60 +137,51 @@ async function listEvents(groupFilter, userId = null) {
             eventId,
             joined,
             isCancelled,
-            null, // crossGroupName placeholder (index 8)
-            start // Add full start datetime for sorting (index 9)
+            null,
+            start
         ];
 
         const startTime = new Date(start);
         const target = startTime > now ? futevents : pastevents;
-        
-        // If userId is provided, show lessons from user's group AND lessons where user is registered
+
         if (userId && groupFilter) {
-            // Always include lessons from user's main group
             if (desc === groupFilter) {
                 if (!target[desc]) target[desc] = [];
                 target[desc].push(when);
             }
-            // Also include lessons from other groups where user is registered
             else if (joined.includes(userId)) {
                 const crossGroupKey = `${groupFilter}_cross_${desc}`;
                 if (!target[crossGroupKey]) target[crossGroupKey] = [];
-                // Add group name to the event data for display
                 const crossGroupWhen = [...when];
-                crossGroupWhen[8] = desc; // Add original group name as crossGroupName
+                crossGroupWhen[8] = desc;
                 target[crossGroupKey].push(crossGroupWhen);
             }
         } else {
-            // Original logic for admin or non-user-specific requests
             if (!target[desc]) target[desc] = [];
             target[desc].push(when);
         }
     });
 
-    // For user-specific requests, flatten cross-group events into main group and sort by date
     if (userId && groupFilter) {
         const flattenAndSortEvents = (events) => {
             const mainGroupEvents = events[groupFilter] || [];
             const crossGroupEvents = [];
-            
+
             Object.keys(events).forEach(key => {
                 if (key.startsWith(`${groupFilter}_cross_`)) {
                     crossGroupEvents.push(...events[key]);
                     delete events[key];
                 }
             });
-            
-            // Combine all events and sort by datetime
+
             const allEvents = [...mainGroupEvents, ...crossGroupEvents];
-            
-            // Sort by the datetime (index 9)
+
             allEvents.sort((a, b) => {
                 const dateA = new Date(a[9]);
                 const dateB = new Date(b[9]);
                 return dateA - dateB;
             });
-            
-            // Remove the sorting datetime from the final result but keep crossGroupName
+
             return allEvents.map(event => event.slice(0, 9));
         };
 
@@ -247,11 +237,9 @@ async function join(eventId, userId) {
     const authClient = await auth.getClient();
     const calendar = google.calendar({ version: 'v3', auth: authClient });
 
-    // Get the specific event first to check its group and current participants
     const res = await calendar.events.get({ calendarId, eventId });
     const event = res.data;
-    
-    // Get the lesson group from the event summary
+
     const lessonGroup = event.summary;
     const lessonMax = config[lessonGroup]?.max || Infinity;
     
@@ -263,8 +251,7 @@ async function join(eventId, userId) {
     if (ids.includes(userId)) {
         return { success: true };
     }
-    
-    // Check if the lesson is already at capacity
+
     if (ids.length >= lessonMax) {
         return { success: false, reason: 'full' };
     }
@@ -337,8 +324,7 @@ async function getParticipants(eventId) {
     const lessonGroup = event.summary;
     const lessonMax = config[lessonGroup]?.max || Infinity;
     const eventDescription = event.description || '';
-    
-    // Check if event is cancelled
+
     if (eventDescription.trim() === 'TÜHISTATUD') {
         return { cancelled: true, participants: [], max: lessonMax, group: lessonGroup };
     }
@@ -413,10 +399,8 @@ function setupAppRoutes(app) {
         res.sendFile(path.join(__dirname, 'static', 'index.html'));
     });
 
-    // Apply authentication to all routes below this point
     app.use(authenticateToken);
 
-    // This API endpoint allows any authenticated user to check their admin status
     app.get('/api/isadmin', (req, res) => {
         if (admins.includes(req.fullname)) {
             res.json({ admin: true });
@@ -539,8 +523,6 @@ function setupAppRoutes(app) {
         res.json({ ic: false, max: 0 });
     });
 
-    // Apply requireAdmin middleware to all routes below this point
-    // This ensures only admins can access these resources.
     app.use(requireAdmin);
 
     app.post('/api/create-account', async(req, res) => {
@@ -627,7 +609,6 @@ function setupAppRoutes(app) {
             }
         }
 
-        // Create the event in Google Calendar
         const result = await calendar.events.insert({
             calendarId,
             requestBody: event
@@ -910,7 +891,6 @@ function setupAppRoutes(app) {
             let skippedCount = 0;
             const errors = [];
 
-            // Skip header row
             for (let i = 1; i < rows.length; i++) {
                 const currentRow = rows[i];
                 const fullname = currentRow[0];
@@ -928,7 +908,6 @@ function setupAppRoutes(app) {
                     if (result.success) {
                         successCount++;
                     } else if (result.message === 'User with this full name already exists.') {
-                        // Skip duplicates without treating as error
                         skippedCount++;
                     } else {
                         errorCount++;
@@ -1007,7 +986,6 @@ function setupAppRoutes(app) {
         const userId = userRows[0].id;
         const userGroup = userRows[0].grupp;
 
-        // Get events from Google Calendar for this user's group
         const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
         const authClient = await auth.getClient();
         const calendar = google.calendar({ version: 'v3', auth: authClient });
@@ -1028,7 +1006,6 @@ function setupAppRoutes(app) {
             pageToken = result.data.nextPageToken;
         } while (pageToken);
 
-        // Filter events for this user's group and format them
         const lessons = allEvents
             .filter(event => event.summary === userGroup)
             .map(event => {
@@ -1049,15 +1026,14 @@ function setupAppRoutes(app) {
                     name: `${estonianStart.getDate().toString().padStart(2, '0')}.${(estonianStart.getMonth() + 1).toString().padStart(2, '0')}.${estonianStart.getFullYear()} ${estonianStart.getHours().toString().padStart(2, '0')}:${estonianStart.getMinutes().toString().padStart(2, '0')}-${estonianEnd.getHours().toString().padStart(2, '0')}:${estonianEnd.getMinutes().toString().padStart(2, '0')}`,
                     isJoined: joined.includes(userId)
                 };
-            }); // Return ALL lessons, not just unjoined ones
+            });
 
         res.json(lessons);
     });
 
     app.get('/api/getregisteredlessons', async(req, res) => {
         const { user } = req.query;
-        
-        // Get user info
+
         const db = await mysql.createConnection(DB_CONFIG);
         const [userRows] = await db.execute('SELECT id, grupp FROM users WHERE fullname = ?', [user]);
         await db.end();
@@ -1068,8 +1044,7 @@ function setupAppRoutes(app) {
         
         const userId = userRows[0].id;
         const userGroup = userRows[0].grupp;
-        
-        // Get events from Google Calendar for this user's group
+
         const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
         const authClient = await auth.getClient();
         const calendar = google.calendar({ version: 'v3', auth: authClient });
@@ -1083,7 +1058,6 @@ function setupAppRoutes(app) {
             timeMin: now.toISOString()
         });
 
-        // Filter events for this user's group where user is already registered
         const registeredLessons = (result.data.items || [])
             .filter(event => event.summary === userGroup)
             .map(event => {
@@ -1105,15 +1079,14 @@ function setupAppRoutes(app) {
                     isJoined: joined.includes(userId)
                 };
             })
-            .filter(lesson => lesson.isJoined); // Only show lessons user has already joined
+            .filter(lesson => lesson.isJoined);
 
         res.json(registeredLessons);
     });
 
     app.post('/api/registerforlesson', async(req, res) => {
         const { user, lessons } = req.body;
-        
-        // Get user ID
+
         const db = await mysql.createConnection(DB_CONFIG);
         const [userRows] = await db.execute('SELECT id, grupp FROM users WHERE fullname = ?', [user]);
         await db.end();
@@ -1123,8 +1096,7 @@ function setupAppRoutes(app) {
         }
         
         const userId = userRows[0].id;
-        
-        // Register user for each selected lesson
+
         const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
         const authClient = await auth.getClient();
         const calendar = google.calendar({ version: 'v3', auth: authClient });
@@ -1132,14 +1104,12 @@ function setupAppRoutes(app) {
         let successCount = 0;
         let errorCount = 0;
         let errorMessages = [];
-        
-        for (const eventId of lessons) { 
+
+        for (const eventId of lessons) {
             try {
-                // Get current event
                 const res = await calendar.events.get({ calendarId, eventId });
                 const event = res.data;
-                
-                // Get the lesson group from the event summary
+
                 const lessonGroup = event.summary;
                 const lessonMax = config[lessonGroup]?.max || Infinity;
                 
@@ -1147,20 +1117,17 @@ function setupAppRoutes(app) {
                     .split(/\s+/)
                     .filter(x => /^\d+$/.test(x.trim()))
                     .map(Number);
-                
-                // Check if user is already registered
+
                 if (ids.includes(userId)) {
-                    continue; // Skip if already registered
+                    continue;
                 }
-                
-                // Check if lesson is at capacity
+
                 if (ids.length >= lessonMax) {
                     errorCount++;
                     errorMessages.push(`Lesson ${eventId} is full`);
                     continue;
                 }
-                
-                // Add user to lesson
+
                 ids.push(userId);
                 const newDescription = ids.join('\n');
                 

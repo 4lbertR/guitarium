@@ -5,15 +5,14 @@
   <title>Sündmused</title>
   <link rel="stylesheet" href="styles.css">
   <style>
-    /* Override or adjust styles from styles.css */
     body {
       margin: 0;
       padding: 0;
       background-color: #ffffff;
       color: #111;
-      text-align: center; /* Keep body text-align center for overall layout */
-      overflow-x: hidden; /* Prevent horizontal scrolling on the body */
-    } 
+      text-align: center;
+      overflow-x: hidden;
+    }
     header {
       display: flex;
       justify-content: space-between;
@@ -28,35 +27,34 @@
       width: auto;
     }
     details.joined {
-      background-color: hsl(322, 50%, 95%); /* Very light purple for the main details background when joined */
+      background-color: hsl(322, 50%, 95%);
     }
     details.joined summary {
-        background-color: hsl(322, 50%, 90%); /* Slightly darker light purple for the summary when joined */
-        border-bottom: 1px solid hsl(322, 50%, 80%); /* Medium-light purple border */
+        background-color: hsl(322, 50%, 90%);
+        border-bottom: 1px solid hsl(322, 50%, 80%);
         padding: 0.4em 0.6em;
     }
     details.cancelled {
-      background-color: #f5f5f5; /* Light gray background for cancelled events */
-      opacity: 0.6; /* Make cancelled events appear faded */
+      background-color: #f5f5f5;
+      opacity: 0.6;
     }
     details.cancelled summary {
-      background-color: #e8e8e8; /* Darker gray for cancelled summary */
-      color: #666; /* Gray text color */
+      background-color: #e8e8e8;
+      color: #666;
       border-bottom: 1px solid #ccc;
       padding: 0.4em 0.6em;
     }
     .lesson-checkmark-icon {
       width: 1.2em;
       height: 1.2em;
-      flex-shrink: 0; /* Prevent icon from shrinking */
+      flex-shrink: 0;
     }
 
-    /* Styles for list and individual boxes */
-    ul { 
+    ul {
       list-style: none;
       padding: 0;
-      margin: 0 auto; /* Center the list */
-      padding: 0; /* Ensure no extra padding pushing content */
+      margin: 0 auto;
+      padding: 0;
     }
     li {
       margin-bottom: 5px;
@@ -65,39 +63,39 @@
     }
     @media (max-width: 468px){
       details {
-        text-align: left; /* Ensure content inside details is left-aligned */
-        width: calc(100% - 20px); /* Corrected from 40px to 20px to match body padding */
-        max-width: none; /* Removed max-width for fluidity on mobile */
+        text-align: left;
+        width: calc(100% - 20px);
+        max-width: none;
         box-sizing: border-box;
-        margin: 0.5em auto; /* Center the details box horizontally */
+        margin: 0.5em auto;
         padding: 5px;
-        border: 1px solid #ccc; /* Keep border from styles.css */
-        border-radius: 6px; /* Keep border-radius from styles.css */
-        background: #f9f9f9; /* Default background for non-joined details */
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        background: #f9f9f9;
       }
     }
     details {
-      text-align: left; /* Ensure content inside details is left-aligned */
-      width: 100%; /* Ensure it takes available width within its parent */
-      max-width: 400px; /* MODIFIED: Set a specific max-width for the details box itself */
-      margin: 0.5em auto; /* Center the details box horizontally */
+      text-align: left;
+      width: 100%;
+      max-width: 400px;
+      margin: 0.5em auto;
       padding: 5px;
-      border: 1px solid #ccc; /* Keep border from styles.css */
-      border-radius: 6px; /* Keep border-radius from styles.css */
-      background: #f9f9f9; /* Default background for non-joined details */
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #f9f9f9;
     }
     summary {
       font-weight: bold;
       cursor: pointer;
       padding: 0.4em 0.6em;
-      display: flex; /* Use flexbox for alignment */
-      align-items: center; /* Vertically center items */
-      justify-content: flex-start; /* Align items to the start (left) */
-      gap: 0.4em; /* Space between text and icon */
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 0.4em;
     }
     summary span {
-        flex-grow: 0; /* Prevent text from growing unnecessarily */
-        white-space: nowrap; /* Keep text on one line if possible */
+        flex-grow: 0;
+        white-space: nowrap;
     }
     details div {
       padding-top: 5px;
@@ -117,7 +115,7 @@
       margin-top: 8px;
     }
     button:hover {
-      background-color: hsl(322, 50%, 41%); /* Keep hover color consistent */
+      background-color: hsl(322, 50%, 41%);
     }
     button:disabled {
       background-color: #cccccc;
@@ -145,16 +143,14 @@
     Vigade või küsimuste tekkimisel võtke ühendust albert.reinman@gmail.com / julia@guitarium.ee
   </footer>
   <script>
-    // Get the JWT token from localStorage
     let jwtToken = localStorage.getItem('jwtToken');
 
     function logout() {
-      localStorage.removeItem('jwtToken'); // NEW: Remove JWT from localStorage
-      window.location.href = '/'; // Redirect to login page
+      localStorage.removeItem('jwtToken');
+      window.location.href = '/';
     }
 
     async function initializePage() {
-      // If no token, redirect to login
       if (!jwtToken) {
         window.location.href = '/';
         return;
@@ -165,16 +161,14 @@
       let config = {};
 
       try {
-        // Fetch user data using the JWT token
         const meResponse = await fetch('/api/me', {
           headers: {
-            'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT in Authorization header
+            'Authorization': `Bearer ${jwtToken}`
           }
         });
 
         if (!meResponse.ok) {
-          // If token is invalid or expired (e.g., 401/403 response), redirect to login
-          localStorage.removeItem('jwtToken'); // Clear invalid token
+          localStorage.removeItem('jwtToken');
           window.location.href = '/';
           return;
         }
@@ -182,20 +176,19 @@
         userId = me.id;
         group = me.group;
 
-        console.log('User group:', group); // DEBUG: Log the user's group
+        console.log('User group:', group);
 
-        const configResponse = await fetch('/config.json'); // config.json is public, no auth needed
+        const configResponse = await fetch('/config.json');
         config = await configResponse.json();
 
-        console.log('Config for group:', config[group]); // DEBUG: Log the config entry for the group
-        
-        const text = config[group]?.time || '';
-        console.log('Fixed time text:', text); // DEBUG: Log the 'time' value
+        console.log('Config for group:', config[group]);
 
-        // Fetch events using the JWT token
+        const text = config[group]?.time || '';
+        console.log('Fixed time text:', text);
+
         const eventsResponse = await fetch('/api/events', {
           headers: {
-            'Authorization': `Bearer ${jwtToken}` // NEW: Send JWT
+            'Authorization': `Bearer ${jwtToken}`
           }
         });
         const data = await eventsResponse.json();
@@ -210,8 +203,7 @@
         document.getElementById('myText').textContent = `Tulemas: ${future.length}, Möödunud: ${past.length}`;
 
         const render = async (target, list, isFuture = false) => {
-          // Batch fetch all participant data at once
-          const eventIds = list.map(event => event[5]); // eventId is at index 5
+          const eventIds = list.map(event => event[5]);
           const participantPromises = eventIds.map(eventId => 
             fetch('/api/getParticipants?eventId=' + eventId, {
               headers: {
@@ -229,7 +221,6 @@
             participantData[eventId] = participantResults[index];
           });
 
-          // Process events in parallel without await in the loop
           const eventElements = list.map((event, index) => {
             const [year, month, day, start, end, eventId, joined, isCancelled, crossGroupName] = event;
             let hasJoined = joined.includes(userId);
@@ -245,8 +236,7 @@
             const summaryTextSpan = document.createElement('span');
             
             let displayText = `${day}. ${month} ${year}, ${start}–${end}`;
-            
-            // Add group name if this is a cross-group lesson
+
             if (crossGroupName && crossGroupName !== group) {
               displayText += ` (${crossGroupName})`;
             }
@@ -270,8 +260,7 @@
 
             const body = document.createElement('div');
             const p = document.createElement('p');
-            
-            // Update participants display with pre-fetched data
+
             updateParticipantsDisplaySync(p, participantData[eventId], group, config);
             
             body.appendChild(p);
@@ -286,21 +275,18 @@
               btn.onclick = async () => {
                 btn.disabled = true;
                 const action = btn.textContent === 'Liitu' ? 'join' : 'leave';
-                
-                // Store original state for potential rollback
+
                 const originalHasJoined = hasJoined;
                 const originalBtnText = btn.textContent;
                 const originalClasses = [...details.classList];
                 const existingIcon = summary.querySelector('.lesson-checkmark-icon');
-                
-                // Immediately update UI to show optimistic state
+
                 hasJoined = !hasJoined;
                 details.classList.toggle('joined');
                 btn.textContent = hasJoined ? 'Loobu' : 'Liitu';
                 howmany += hasJoined ? 1 : -1;
                 document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
 
-                // Update checkmark icon immediately
                 if (hasJoined) {
                     if (!existingIcon) {
                         const checkmarkImg = document.createElement('img');
@@ -322,21 +308,19 @@
                     }
                   });
                   const result = await res.json();
-                  
+
+
                   errorMsg.style.display = 'none';
                   if (result.success) {
-                    // Success - keep the optimistic changes and update participant list
                     await updateParticipantsDisplay(eventId, p, group, config);
                   } else {
-                    // Error - revert the optimistic changes
                     hasJoined = originalHasJoined;
                     btn.textContent = originalBtnText;
                     details.className = '';
                     originalClasses.forEach(cls => details.classList.add(cls));
-                    howmany += originalHasJoined ? 1 : -1; // Revert count change
+                    howmany += originalHasJoined ? 1 : -1;
                     document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
-                    
-                    // Revert checkmark icon
+
                     const currentIcon = summary.querySelector('.lesson-checkmark-icon');
                     if (originalHasJoined && !existingIcon && !currentIcon) {
                         const checkmarkImg = document.createElement('img');
@@ -347,7 +331,7 @@
                     } else if (!originalHasJoined && currentIcon) {
                         currentIcon.remove();
                     }
-                    
+
                     errorMsg.textContent =
                       result.reason === 'too_late'
                         ? 'Osavõtust ei saa loobuda vähem kui 24h enne algust.'
@@ -358,16 +342,14 @@
                   }
                 } catch (err) {
                   console.error('Fetch error:', err);
-                  
-                  // Network error - revert the optimistic changes
+
                   hasJoined = originalHasJoined;
                   btn.textContent = originalBtnText;
                   details.className = '';
                   originalClasses.forEach(cls => details.classList.add(cls));
-                  howmany += originalHasJoined ? 1 : -1; // Revert count change
+                  howmany += originalHasJoined ? 1 : -1;
                   document.getElementById('fixedInfo').textContent = `Sinu grupp on ${group}`;
-                  
-                  // Revert checkmark icon
+
                   const currentIcon = summary.querySelector('.lesson-checkmark-icon');
                   if (originalHasJoined && !existingIcon && !currentIcon) {
                       const checkmarkImg = document.createElement('img');
@@ -378,7 +360,7 @@
                   } else if (!originalHasJoined && currentIcon) {
                       currentIcon.remove();
                   }
-                  
+
                   errorMsg.textContent = 'Võrguviga või serveri viga.';
                   errorMsg.style.display = 'block';
                 } finally {
@@ -396,11 +378,9 @@
             return wrapper;
           });
 
-          // Append all elements at once
           eventElements.forEach(element => target.appendChild(element));
         };
 
-        // Synchronous version for pre-fetched data
         function updateParticipantsDisplaySync(paragraphElement, result, userGroup, config) {
           if (result.cancelled) {
             paragraphElement.textContent = 'Tundi ei toimu';
@@ -426,7 +406,6 @@
           paragraphElement.textContent = displayText;
         }
 
-        // Keep the original function for individual updates after join/leave
         async function updateParticipantsDisplay(eventId, paragraphElement, userGroup, config) {
           try {
             const participantsRes = await fetch('/api/getParticipants?eventId=' + eventId, {
@@ -447,8 +426,8 @@
 
       } catch (error) {
         console.error('Error initializing page:', error);
-        localStorage.removeItem('jwtToken'); // Clear token if initialization fails
-        window.location.href = '/'; // Redirect to login
+        localStorage.removeItem('jwtToken');
+        window.location.href = '/';
                 document.getElementById('myText').textContent = '❌ Viga sündmuste laadimisel';
       }
     }
@@ -468,15 +447,12 @@
                 });
                 const data = await response.json();
                 if (data.admin) {
-                    // If user is admin, redirect to admin panel
                     window.location.href = '/admin/index.html';
                     return;
                 }
-                // If not admin, continue with normal page initialization
                 initializePage();
             } catch (error) {
                 console.error('Error checking admin status:', error);
-                // If there's an error, treat as non-admin and continue
                 initializePage();
             }
         }
