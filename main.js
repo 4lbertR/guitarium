@@ -651,7 +651,7 @@ function setupAppRoutes(app) {
         if (!group) {
             return res.status(400).json({ error: 'Group parameter is required' });
         }
-        
+
         try {
             const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
             const authClient = await auth.getClient();
@@ -663,7 +663,7 @@ function setupAppRoutes(app) {
                 maxResults: 100,
                 singleEvents: true,
                 orderBy: 'startTime',
-                timeMin: new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString(),
+                timeMin: new Date(now.getFullYear(), now.getMonth() - 6, 1).toISOString(),
             });
 
             const months = {
@@ -672,7 +672,7 @@ function setupAppRoutes(app) {
                 '09': 'september', '10': 'oktoober', '11': 'november', '12': 'detsember'
             };
 
-            const futureEvents = (result.data.items || [])
+            const allEvents = (result.data.items || [])
                 .filter(event => event.summary === group)
                 .map(event => {
                     const start = event.start?.dateTime;
@@ -680,15 +680,15 @@ function setupAppRoutes(app) {
                     const eventId = event.id;
                     const eventDescription = event.description || '';
                     const isCancelled = eventDescription.trim() === 'TÜHISTATUD';
-                    
+
                     if (!start || !end) return null;
-                    
+
                     const year = start.slice(0, 4);
                     const month = months[start.slice(5, 7)];
                     const day = start.slice(8, 10);
                     const startTime = start.slice(11, 16);
                     const endTime = end.slice(11, 16);
-                    
+
                     return {
                         eventId: eventId,
                         year: year,
@@ -697,12 +697,28 @@ function setupAppRoutes(app) {
                         startTime: startTime,
                         endTime: endTime,
                         dateString: `${day}. ${month} ${year}, ${startTime}-${endTime}`,
-                        isCancelled: isCancelled
+                        isCancelled: isCancelled,
+                        startDateTime: new Date(start)
                     };
                 })
                 .filter(event => event !== null);
 
-            res.json(futureEvents);
+            // Separate past and future events
+            const pastEvents = allEvents.filter(event => event.startDateTime < now);
+            const futureEvents = allEvents.filter(event => event.startDateTime >= now);
+
+            // Get last 5 past events and next 5 future events
+            const last5Past = pastEvents.slice(-5);
+            const next5Future = futureEvents.slice(0, 5);
+
+            // Combine them (past events first, then future)
+            const combinedEvents = [...last5Past, ...next5Future].map(event => {
+                // Remove the startDateTime field before sending response
+                const { startDateTime, ...eventWithoutDateTime } = event;
+                return eventWithoutDateTime;
+            });
+
+            res.json(combinedEvents);
         } catch (error) {
             console.error('Error fetching events by group:', error);
             res.status(500).json({ error: 'Failed to fetch events' });
