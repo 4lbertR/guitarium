@@ -658,6 +658,9 @@ function setupAppRoutes(app) {
             const calendar = google.calendar({ version: 'v3', auth: authClient });
 
             const now = new Date();
+            console.log(`[DEBUG] Current time: ${now.toISOString()}`);
+            console.log(`[DEBUG] Fetching events for group: ${group}`);
+
             const result = await calendar.events.list({
                 calendarId,
                 maxResults: 100,
@@ -665,6 +668,8 @@ function setupAppRoutes(app) {
                 orderBy: 'startTime',
                 timeMin: new Date(now.getFullYear(), now.getMonth() - 6, 1).toISOString(),
             });
+
+            console.log(`[DEBUG] Total events from Google Calendar: ${result.data.items?.length || 0}`);
 
             const months = {
                 '01': 'jaanuar', '02': 'veebruar', '03': 'märts', '04': 'aprill',
@@ -703,13 +708,23 @@ function setupAppRoutes(app) {
                 })
                 .filter(event => event !== null);
 
+            console.log(`[DEBUG] Events matching group '${group}': ${allEvents.length}`);
+            if (allEvents.length > 0) {
+                console.log(`[DEBUG] First event date: ${allEvents[0].startDateTime.toISOString()}`);
+                console.log(`[DEBUG] Last event date: ${allEvents[allEvents.length - 1].startDateTime.toISOString()}`);
+            }
+
             // Separate past and future events
             const pastEvents = allEvents.filter(event => event.startDateTime < now);
             const futureEvents = allEvents.filter(event => event.startDateTime >= now);
 
+            console.log(`[DEBUG] Past events: ${pastEvents.length}, Future events: ${futureEvents.length}`);
+
             // Get last 5 past events and next 5 future events
             const last5Past = pastEvents.slice(-5);
             const next5Future = futureEvents.slice(0, 5);
+
+            console.log(`[DEBUG] Returning ${last5Past.length} past + ${next5Future.length} future = ${last5Past.length + next5Future.length} total events`);
 
             // Combine them (past events first, then future)
             const combinedEvents = [...last5Past, ...next5Future].map(event => {
