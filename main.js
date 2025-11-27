@@ -660,10 +660,10 @@ function setupAppRoutes(app) {
             const now = new Date();
             const result = await calendar.events.list({
                 calendarId,
-                maxResults: 100,
+                maxResults: 500,
                 singleEvents: true,
                 orderBy: 'startTime',
-                timeMin: new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString(),
+                timeMin: 0,
             });
 
             const months = {
