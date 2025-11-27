@@ -147,25 +147,43 @@
                 const response = await fetch(`/api/getevents-by-group?group=${encodeURIComponent(group)}`, {
                     headers: { 'Authorization': `Bearer ${jwtToken}` }
                 });
-                
+
                 if (!response.ok) {
                     throw new Error('Failed to fetch events for group');
                 }
-                
-                const futureEvents = await response.json();
-                console.log('Future events for group:', group, futureEvents);
-                
+
+                const result = await response.json();
+                // API now returns { events: [...] } where events are sorted ascending by startISO
+                const events = result.events || [];
+                console.log('Events for group:', group, events);
+
                 dateSelect.innerHTML = '<option value="">Vali kuupäev</option>';
-                
-                if (futureEvents.length === 0) {
-                    dateSelect.innerHTML = '<option value="">Tulevasi tunde ei leitud</option>';
+
+                if (events.length === 0) {
+                    dateSelect.innerHTML = '<option value="">Tunde ei leitud</option>';
                 } else {
-                    futureEvents.forEach(event => {
+                    const now = new Date();
+                    // find index of first future event
+                    let idxNext = events.findIndex(e => new Date(e.startISO) > now);
+                    if (idxNext === -1) idxNext = events.length; // all past
+
+                    const prevStart = Math.max(0, idxNext - 5);
+                    const prev = events.slice(prevStart, idxNext); // ascending older->recent
+                    const next = events.slice(idxNext, Math.min(events.length, idxNext + 5));
+
+                    // We will show previous (most recent first) then next (soonest first)
+                    const toShow = [];
+                    // previous in reverse so most recent past is first
+                    prev.reverse().forEach(ev => toShow.push(ev));
+                    next.forEach(ev => toShow.push(ev));
+
+                    toShow.forEach(event => {
                         const option = document.createElement('option');
                         option.value = event.eventId;
                         option.textContent = event.dateString + (event.isCancelled ? ' (TÜHISTATUD)' : '');
                         dateSelect.appendChild(option);
                     });
+
                     dateSelect.disabled = false;
                 }
                 
