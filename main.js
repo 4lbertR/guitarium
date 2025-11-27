@@ -658,15 +658,19 @@ function setupAppRoutes(app) {
             const calendar = google.calendar({ version: 'v3', auth: authClient });
 
             const now = new Date();
-            // Expand recurring events for a reasonable future window (1 year)
+            // Fetch instances from 1 year in the past to 1 year in the future so
+            // the client can show previous and next lessons around today.
+            const pastWindow = new Date(now);
+            pastWindow.setFullYear(now.getFullYear() - 1);
             const future = new Date(now);
             future.setFullYear(now.getFullYear() + 1);
+
             const result = await calendar.events.list({
                 calendarId,
-                maxResults: 500,
+                maxResults: 1000,
                 singleEvents: true,
                 orderBy: 'startTime',
-                timeMin: now.toISOString(),
+                timeMin: pastWindow.toISOString(),
                 timeMax: future.toISOString()
             });
 
@@ -676,7 +680,7 @@ function setupAppRoutes(app) {
                 '09': 'september', '10': 'oktoober', '11': 'november', '12': 'detsember'
             };
 
-            const futureEvents = (result.data.items || [])
+            const events = (result.data.items || [])
                 .filter(event => event.summary === group)
                 .map(event => {
                     const start = event.start?.dateTime;
@@ -684,15 +688,14 @@ function setupAppRoutes(app) {
                     const eventId = event.id;
                     const eventDescription = event.description || '';
                     const isCancelled = eventDescription.trim() === 'TÜHISTATUD';
-                    
                     if (!start || !end) return null;
-                    
+
                     const year = start.slice(0, 4);
                     const month = months[start.slice(5, 7)];
                     const day = start.slice(8, 10);
                     const startTime = start.slice(11, 16);
                     const endTime = end.slice(11, 16);
-                    
+
                     return {
                         eventId: eventId,
                         year: year,
@@ -701,12 +704,14 @@ function setupAppRoutes(app) {
                         startTime: startTime,
                         endTime: endTime,
                         dateString: `${day}. ${month} ${year}, ${startTime}-${endTime}`,
-                        isCancelled: isCancelled
+                        isCancelled: isCancelled,
+                        startISO: start
                     };
                 })
-                .filter(event => event !== null);
+                .filter(event => event !== null)
+                .sort((a, b) => new Date(a.startISO) - new Date(b.startISO));
 
-            res.json(futureEvents);
+            res.json({ events });
         } catch (error) {
             console.error('Error fetching events by group:', error);
             res.status(500).json({ error: 'Failed to fetch events' });
