@@ -658,12 +658,16 @@ function setupAppRoutes(app) {
             const calendar = google.calendar({ version: 'v3', auth: authClient });
 
             const now = new Date();
+            // Expand recurring events for a reasonable future window (1 year)
+            const future = new Date(now);
+            future.setFullYear(now.getFullYear() + 1);
             const result = await calendar.events.list({
                 calendarId,
                 maxResults: 500,
                 singleEvents: true,
                 orderBy: 'startTime',
-                timeMin: 0,
+                timeMin: now.toISOString(),
+                timeMax: future.toISOString()
             });
 
             const months = {
