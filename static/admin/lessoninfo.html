@@ -171,10 +171,11 @@
                     const prev = events.slice(prevStart, idxNext); // ascending older->recent
                     const next = events.slice(idxNext, Math.min(events.length, idxNext + 5));
 
-                    // We will show previous (most recent first) then next (soonest first)
+                    // Show all lessons in chronological order (oldest to newest)
                     const toShow = [];
-                    // previous in reverse so most recent past is first
-                    prev.reverse().forEach(ev => toShow.push(ev));
+                    // previous events are already in chronological order (oldest to most recent)
+                    prev.forEach(ev => toShow.push(ev));
+                    // next events are also in chronological order (soonest to furthest)
                     next.forEach(ev => toShow.push(ev));
 
                     toShow.forEach(event => {
