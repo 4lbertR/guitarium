@@ -105,11 +105,19 @@ async function listEvents(groupFilter, userId = null) {
     const calendar = google.calendar({ version: 'v3', auth: authClient });
 
     const now = new Date();
+    // Fetch events from 1 year in the past to 1 year in the future
+    const pastWindow = new Date(now);
+    pastWindow.setFullYear(now.getFullYear() - 1);
+    const future = new Date(now);
+    future.setFullYear(now.getFullYear() + 1);
+
     const result = await calendar.events.list({
         calendarId,
-        maxResults: 130,
+        maxResults: 1000,
         singleEvents: true,
-        orderBy: 'startTime'
+        orderBy: 'startTime',
+        timeMin: pastWindow.toISOString(),
+        timeMax: future.toISOString()
     });
 
     (result.data.items || []).forEach(event => {

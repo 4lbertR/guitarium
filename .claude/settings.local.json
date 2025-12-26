@@ -1,7 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)",
+      "Bash(git push:*)",
+      "Bash(gh auth:*)",
+      "Bash(sudo apt update:*)",
+      "Bash(sudo apt install:*)",
+      "Bash(sudo -S apt update:*)",
+      "Bash(sudo -S apt install:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []
