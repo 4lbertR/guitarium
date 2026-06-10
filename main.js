@@ -659,19 +659,16 @@ function setupAppRoutes(app) {
         if (!group) {
             return res.status(400).json({ error: 'Group parameter is required' });
         }
-        
+
         try {
             const auth = new google.auth.GoogleAuth({ credentials: key, scopes: SCOPES });
             const authClient = await auth.getClient();
             const calendar = google.calendar({ version: 'v3', auth: authClient });
 
             const now = new Date();
-            // Fetch instances from 1 year in the past to 1 year in the future so
-            // the client can show previous and next lessons around today.
-            const pastWindow = new Date(now);
-            pastWindow.setFullYear(now.getFullYear() - 1);
-            const future = new Date(now);
-            future.setFullYear(now.getFullYear() + 1);
+            // Fetch instances from start of previous month to end of current month
+            const pastWindow = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const future = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
             const result = await calendar.events.list({
                 calendarId,
