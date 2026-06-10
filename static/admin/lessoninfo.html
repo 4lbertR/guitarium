@@ -162,23 +162,9 @@
                 if (events.length === 0) {
                     dateSelect.innerHTML = '<option value="">Tunde ei leitud</option>';
                 } else {
-                    const now = new Date();
-                    // find index of first future event
-                    let idxNext = events.findIndex(e => new Date(e.startISO) > now);
-                    if (idxNext === -1) idxNext = events.length; // all past
-
-                    const prevStart = Math.max(0, idxNext - 5);
-                    const prev = events.slice(prevStart, idxNext); // ascending older->recent
-                    const next = events.slice(idxNext, Math.min(events.length, idxNext + 5));
-
-                    // Show all lessons in chronological order (oldest to newest)
-                    const toShow = [];
-                    // previous events are already in chronological order (oldest to most recent)
-                    prev.forEach(ev => toShow.push(ev));
-                    // next events are also in chronological order (soonest to furthest)
-                    next.forEach(ev => toShow.push(ev));
-
-                    toShow.forEach(event => {
+                    // Show ALL events from the API (already filtered to previous month + current month)
+                    // Events are already sorted by startISO in ascending order
+                    events.forEach(event => {
                         const option = document.createElement('option');
                         option.value = event.eventId;
                         option.textContent = event.dateString + (event.isCancelled ? ' (TÜHISTATUD)' : '');
