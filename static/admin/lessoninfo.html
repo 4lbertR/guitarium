@@ -236,13 +236,20 @@
                     `;
                 } else {
                     const filledSpots = data.participants.length;
-                    const maxSpots = data.max === Infinity ? 'Piiritud' : data.max;
-                    const spotsLeft = data.max === Infinity ? '∞' : (data.max - filledSpots);
-                    
+
+                    let capacityText;
+                    if (data.max === Infinity || data.max === null) {
+                        // No limit set - just show the count without "/max" or "vaba kohta"
+                        capacityText = `📊 Kohti täidetud: ${filledSpots}`;
+                    } else {
+                        // Limit is set - show count/max and remaining spots
+                        const spotsLeft = data.max - filledSpots;
+                        capacityText = `📊 Kohti täidetud: ${filledSpots}/${data.max} (${spotsLeft} vaba kohta)`;
+                    }
+
                     infoHTML += `
                         <div class="capacity-info">
-                            📊 Kohti täidetud: ${filledSpots}/${maxSpots} 
-                            ${data.max !== Infinity ? `(${spotsLeft} vaba kohta)` : ''}
+                            ${capacityText}
                         </div>
                     `;
                     
