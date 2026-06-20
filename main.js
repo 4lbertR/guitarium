@@ -666,10 +666,10 @@ function setupAppRoutes(app) {
             const calendar = google.calendar({ version: 'v3', auth: authClient });
 
             const now = new Date();
-            // Fetch events from start of previous month (e.g., May 1) to end of current month (e.g., June 30)
-            // This ensures all lessons in the 2-month window are visible in the admin panel
+            // Fetch events from start of previous month (e.g., May 1) to end of next month (e.g., July 31)
+            // This keeps enough upcoming lessons visible in the admin panel even when they roll into the next month
             const pastWindow = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
-            const future = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+            const future = new Date(now.getFullYear(), now.getMonth() + 2, 0, 23, 59, 59, 999);
 
             const result = await calendar.events.list({
                 calendarId,
