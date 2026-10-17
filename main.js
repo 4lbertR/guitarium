@@ -194,7 +194,7 @@ async function listEvents(groupFilter, userId = null) {
         };
 
         const futureFlattened = flattenAndSortEvents(futevents);
-        const pastFlattened = flattenAndSortEvents(pastevents);
+        const pastFlattened = flattenAndSortEvents(pastevents).slice(-6).reverse();
 
         return {
             future: futureFlattened,
