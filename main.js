@@ -395,7 +395,7 @@ function setupAppRoutes(app) {
             }
         } catch (err) {
             console.error('Login error:', err.message);
-            res.status(500).json({ success: false, message: 'Internal server error during login', errorCode: err.code || 'UNKNOWN' });
+            res.status(500).json({ success: false, message: 'Internal server error during login' });
         }
     });
 

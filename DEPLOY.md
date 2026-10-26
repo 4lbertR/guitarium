@@ -2,7 +2,7 @@
 
 ## Database connection
 
-The `guitarium` app and `guitarium-db` run on the same CapRover overlay network. Set the app's `DB_HOST` to `guitarium-db` and `DB_PORT` to `3306` in CapRover App Config. Port `6969` is the database's host mapping for external clients; connecting to `realsteal.online:6969` from the app can time out and make every login return HTTP 500. After changing environment variables, wait for CapRover to restart the app and verify that a nonexistent account receives the normal invalid-credentials response instead of HTTP 500.
+The `guitarium` app and `guitarium-db` run on the same CapRover overlay network. This installation uses the legacy Docker service alias, so set the app's `DB_HOST` to `srv-captain--guitarium-db` and `DB_PORT` to `3306` in CapRover App Config. Port `6969` is the database's host mapping for external clients; connecting to `realsteal.online:6969` from the app can time out and make every login return HTTP 500. After changing environment variables, wait for CapRover to restart the app and verify that a nonexistent account receives the normal invalid-credentials response instead of HTTP 500.
 
 ## Recent Changes (June 10, 2026)
 
