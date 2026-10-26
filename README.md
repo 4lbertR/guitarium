@@ -52,8 +52,8 @@ Deploy your application:
 1. Clone this repository to your local machine
 2. Install dependencies: `npm install`
 3. Set up environment variables (create a .env file):
-   - `DB_HOST` - MySQL database host
-   - `DB_PORT` - MySQL database port
+   - `DB_HOST` - MySQL service name (`guitarium-db` on this CapRover cluster)
+   - `DB_PORT` - MySQL container port (`3306`); use the internal service address from the app container
    - `DB_USER` - MySQL database username
    - `DB_PASSWORD` - MySQL database password
    - `DB_DATABASE` - MySQL database name

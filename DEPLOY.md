@@ -1,5 +1,9 @@
 # Deployment Instructions
 
+## Database connection
+
+The `guitarium` app and `guitarium-db` run on the same CapRover overlay network. Set the app's `DB_HOST` to `guitarium-db` and `DB_PORT` to `3306` in CapRover App Config. Port `6969` is the database's host mapping for external clients; connecting to `realsteal.online:6969` from the app can time out and make every login return HTTP 500. After changing environment variables, wait for CapRover to restart the app and verify that a nonexistent account receives the normal invalid-credentials response instead of HTTP 500.
+
 ## Recent Changes (June 10, 2026)
 
 Updated the admin panel's "Tunni info" (lesson info) page to show lessons from the **start of the previous month** to the **end of the current month** (e.g., May 1 - June 30 when viewing in June).

@@ -48,6 +48,11 @@
 
         const data = await response.json();
 
+        if (!response.ok) {
+          errorMessage.textContent = 'Serveri viga. Palun proovige hiljem uuesti.';
+          return;
+        }
+
         if (data.success) {
           localStorage.setItem('jwtToken', data.token); // Store JWT in localStorage
           if (data.admin) {
